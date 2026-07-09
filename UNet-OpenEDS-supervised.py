@@ -16,6 +16,9 @@ from monai.losses import DiceLoss
 monai.config.print_config()
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
+checkpoint_dir = os.path.join(os.environ['HOME'], __name__ + '_checkpoints')
+os.makedirs(checkpoint_dir, exist_ok=True)
+
 train_dir = '/work/cvcs2026/LZMM/OpenEDS/openEDS/openEDS/train'
 
 images = sorted(glob(os.path.join(train_dir, 'images/*.png')))
@@ -37,9 +40,11 @@ train_dataset = Dataset(
 
 train_loader = DataLoader(
     train_dataset,
-    batch_size=128,
+    batch_size=64,
     shuffle=True,
-    num_workers=2,
+    num_workers=8,
+    persistent_workers=True,
+    prefetch_factor=4,
     pin_memory=torch.cuda.is_available(),
     collate_fn=list_data_collate,
 )
@@ -66,6 +71,7 @@ writer = SummaryWriter()
 
 N_EPOCHES = 200
 
+best_loss = float('inf')
 for epoch in range(N_EPOCHES):
     print("-" * 10)
     print(f"epoch {epoch + 1}/{N_EPOCHES}")
@@ -86,5 +92,16 @@ for epoch in range(N_EPOCHES):
         writer.add_scalar("train_loss", loss.item(), epoch_len * epoch + step)
     epoch_loss /= step
     print(f"epoch {epoch + 1} average loss: {epoch_loss:.4f}")
+
+    torch.save({
+        'epoch': epoch,
+        'model_state_dict': model.state_dict(),
+        'optimizer_state_dict': optimizer.state_dict(),
+        'loss': epoch_loss,
+    }, os.path.join(checkpoint_dir, 'last.pt'))
+
+    if epoch_loss < best_loss:
+        best_loss = epoch_loss
+        torch.save(model.state_dict(), os.path.join(checkpoint_dir, 'best.pt'))
 
 writer.close()
