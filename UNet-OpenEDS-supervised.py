@@ -16,7 +16,7 @@ from monai.losses import DiceLoss
 monai.config.print_config()
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
-checkpoint_dir = os.path.join(os.environ['HOME'], __name__ + '_checkpoints')
+checkpoint_dir = os.path.join(os.environ['HOME'], 'cv-project/' + os.path.basename(__file__) + '_checkpoints')
 os.makedirs(checkpoint_dir, exist_ok=True)
 
 train_dir = '/work/cvcs2026/LZMM/OpenEDS/openEDS/openEDS/train'
