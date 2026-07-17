@@ -34,7 +34,7 @@ loss_fun = DiceLoss(
     sigmoid=True
 )
 
-optimizer = Adam(model.parameters(), lr=1e-4)
+optimizer = Adam(model.parameters(), lr=1e-3)
 
 N_EPOCHES = 50
 
