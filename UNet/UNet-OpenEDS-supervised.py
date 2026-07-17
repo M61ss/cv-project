@@ -6,30 +6,57 @@ from glob import glob
 import torch
 from torch.utils.tensorboard import SummaryWriter
 from torch.optim import Adam
+import torch.distributed as dist
+import torch.multiprocessing as mp
+from torch.nn.parallel import DistributedDataParallel as DDP
 
 import monai
 from monai.transforms import Compose, LoadImaged, EnsureChannelFirstd, ScaleIntensityd
 from monai.data import Dataset, DataLoader, list_data_collate
 from monai.networks.nets import UNet
 from monai.losses import DiceLoss
-from monai.metrics import DiceMetric
 
-monai.config.print_config()
-logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+
+def run(rank, size):
+    pass
+
+
+def init_process(rank, size, fn, backend='nccl'):
+    os.environ['MASTER_ADDR'] = '127.0.0.1'
+    os.environ['MASTER_PORT'] = '29500'
+    dist.init_process_group(backend, rank=rank, world_size=size)
+    fn(rank, size)
+
+
+if __name__ == "__main__":
+    monai.config.print_config()
+    logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+
+    world_size = 2
+    processes = []
+    mp.set_start_method("spawn")
+    for rank in range(world_size):
+        p = mp.Process(target=init_process, args=(rank, world_size, run))
+        p.start()
+        processes.append(p)
+
+    for p in processes:
+        p.join()
+
 
 checkpoint_dir = os.path.join(os.environ['HOME'], 'cv-project/UNet-OpenEDS-supervised_checkpoints')
 os.makedirs(checkpoint_dir, exist_ok=True)
 
 train_dir = '/work/cvcs2026/LZMM/OpenEDS/openEDS/openEDS/train'
-test_dir = '/work/cvcs2026/LZMM/OpenEDS/openEDS/openEDS/test'
+validation_dir = '/work/cvcs2026/LZMM/OpenEDS/openEDS/openEDS/validation'
 
 train_images = sorted(glob(os.path.join(train_dir, 'images/*.png')))
 train_masks = sorted(glob(os.path.join(train_dir, 'masks/*.png')))
-test_images = sorted(glob(os.path.join(test_dir, 'images/*.png')))
-test_masks = sorted(glob(os.path.join(test_dir, 'masks/*.png')))
+validation_images = sorted(glob(os.path.join(validation_dir, 'images/*.png')))
+validation_masks = sorted(glob(os.path.join(validation_dir, 'masks/*.png')))
 
 train_files = [ {'img': img, 'mask': mask} for img, mask in zip(train_images, train_masks) ]
-test_files = [ {'img': img, 'mask': mask} for img, mask in zip(test_images, test_masks) ]
+validation_files = [ {'img': img, 'mask': mask} for img, mask in zip(validation_images, validation_masks) ]
 
 train_transforms = Compose(
     [
@@ -38,7 +65,7 @@ train_transforms = Compose(
         ScaleIntensityd(keys=['img']),
     ]
 )
-test_transforms = Compose(
+validation_transforms = Compose(
     [
         LoadImaged(keys=['img', 'mask']),
         EnsureChannelFirstd(keys=['img', 'mask']),
@@ -50,26 +77,26 @@ train_dataset = Dataset(
     data=train_files,
     transform=train_transforms,
 )
-test_dataset = Dataset(
-    data=test_files,
-    transform=test_transforms,
+validation_dataset = Dataset(
+    data=validation_files,
+    transform=validation_transforms,
 )
 
 train_loader = DataLoader(
     train_dataset,
     batch_size=64,
     shuffle=True,
-    num_workers=16,
+    num_workers=4,
     persistent_workers=True,
-    prefetch_factor=8,
+    prefetch_factor=4,
     pin_memory=torch.cuda.is_available(),
     collate_fn=list_data_collate,
 )
-test_loader = DataLoader(
-    test_dataset,
+validation_loader = DataLoader(
+    validation_dataset,
     batch_size=64,
     shuffle=False,
-    num_workers=8,
+    num_workers=4,
     persistent_workers=True,
     prefetch_factor=4,
     pin_memory=torch.cuda.is_available(),
@@ -94,24 +121,18 @@ loss_fun = DiceLoss(
 
 optimizer = Adam(model.parameters(), lr=1e-4)
 
-dice_metric = DiceMetric(
-    include_background=True,
-    reduction='mean',
-    get_not_nans=False,
-)
-
 writer = SummaryWriter()
 
 N_EPOCHES = 100
 
-best_metric = float('-inf')
-best_metric_epoch = -1
+best_validation_loss = float('-inf')
+best_validation_loss_epoch = -1
 for epoch in range(N_EPOCHES):
     print("=" * 20)
     print(f"EPOCH {epoch + 1}/{N_EPOCHES}")
 
     model.train()
-    epoch_loss = 0
+    epoch_train_loss = 0
     train_steps = 0
     for train_batch in train_loader:
         train_steps += 1
@@ -121,39 +142,47 @@ for epoch in range(N_EPOCHES):
         loss = loss_fun(pred, train_masks)
         loss.backward()
         optimizer.step()
-        epoch_loss += loss.item()
+        epoch_train_loss += loss.item()
         epoch_train_len = len(train_dataset) // train_loader.batch_size
         print(f"\t{train_steps}/{epoch_train_len} train_loss: {loss.item():.4f}")
         writer.add_scalar("train_loss", loss.item(), epoch_train_len * epoch + train_steps)
-    epoch_loss /= train_steps
-    print(f"\tAverage train loss: {epoch_loss:.4f}")
+    epoch_train_loss /= train_steps
+    print(f"\tAverage train loss: {epoch_train_loss:.4f}")
 
     model.eval()
     with torch.no_grad():
-        for test_batch in test_loader:
-            test_imgs, test_masks = test_batch['img'].to(device), test_batch['mask'].to(device)
-            pred = model(test_imgs)
-            dice_metric(pred, test_masks)
-        metric = dice_metric.aggregate().item()
-        print(f"\tDice metric: {metric:.4f}")
-        dice_metric.reset()
-        if metric > best_metric:
-            best_metric = metric
-            best_metric_epoch = epoch + 1
+        epoch_validation_loss = 0
+        validation_steps = 0
+        for validation_batch in validation_loader:
+            validation_steps += 1
+            validation_imgs, validation_masks = validation_batch['img'].to(device), validation_batch['mask'].to(device)
+            pred = model(validation_imgs)
+            loss = loss_fun(pred, validation_masks)
+            epoch_validation_loss += loss.item()
+        epoch_validation_loss /= validation_steps
+        print(f"\tAverage validation loss: {epoch_validation_loss:.4f}")
+
+        # ADD EARLY STOPPING
+
+        if epoch_validation_loss > best_validation_loss:
+            best_validation_loss = epoch_validation_loss
+            best_validation_loss_epoch = epoch + 1
             torch.save({
                 'epoch': epoch,
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
-                'loss': epoch_loss,
+                'train_loss': epoch_train_loss,
+                'validation_loss': epoch_validation_loss,
             }, os.path.join(checkpoint_dir, 'best.pth'))
 
     torch.save({
         'epoch': epoch,
         'model_state_dict': model.state_dict(),
         'optimizer_state_dict': optimizer.state_dict(),
-        'loss': epoch_loss,
+        'train_loss': epoch_train_loss,
+        'validation_loss': epoch_validation_loss,
     }, os.path.join(checkpoint_dir, 'last.pth'))
 
 print(f"TRAIN COMPLETED!")
-print(f"best_metric: {best_metric:.4f} at epoch: {best_metric_epoch}")
+print(f"best_metric: {best_validation_loss:.4f} at epoch: {best_validation_loss_epoch}")
 writer.close()
