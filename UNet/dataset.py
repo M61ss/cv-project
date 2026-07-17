@@ -1,5 +1,6 @@
 import os
 from glob import glob
+from random import shuffle
 
 import torch
 
@@ -48,6 +49,7 @@ train_loader = DataLoader(
     num_workers=4,
     persistent_workers=True,
     prefetch_factor=4,
+    shuffle=True,
     pin_memory=torch.cuda.is_available(),
     collate_fn=list_data_collate,
 )
