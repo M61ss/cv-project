@@ -36,8 +36,7 @@ loss_fun = DiceLoss(
 
 optimizer = Adam(model.parameters(), lr=1e-4)
 
-N_EPOCHES = 100
-
+N_EPOCHES = 50
 
 best_validation_loss = float('inf')
 best_validation_loss_epoch = -1
