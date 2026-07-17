@@ -8,7 +8,6 @@ import torch.distributed as dist
 import torch.multiprocessing as mp
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.optim import Adam
-from torch.utils.tensorboard import SummaryWriter
 from monai.networks.nets import UNet
 from monai.losses import DiceLoss
 
@@ -17,7 +16,7 @@ import monai
 from dataset import partition_train_dataset, partition_validation_dataset
 
 
-checkpoint_dir = os.path.join(os.environ['HOME'], 'cv-project/UNet/checkpoints')
+checkpoint_dir = os.path.join(os.path.dirname(__file__), 'checkpoints')
 
 
 def setup(rank, world_size):
