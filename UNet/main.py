@@ -10,6 +10,8 @@ from monai.losses import DiceLoss
 
 import monai
 
+import wandb
+
 from dataset import train_loader, validation_loader
 
 
@@ -30,52 +32,73 @@ model = UNet(
     num_res_units=2
 ).to(device)
 
+LR = 1e-3
+N_EPOCHES = 50
+
 loss_fun = DiceLoss(
     sigmoid=True
 )
 
-optimizer = Adam(model.parameters(), lr=1e-3)
+optimizer = Adam(model.parameters(), lr=LR)
 
-N_EPOCHES = 50
+wandb.login()
+wandb_project_name = "UNet"
+wandb_config = {
+    "learning_rate": LR,
+    "architecture": "UNet",
+    "dataset": "OpenEDS",
+    "epochs": N_EPOCHES,
+}
 
-best_validation_loss = float('inf')
-best_validation_loss_epoch = -1
-for epoch in range(N_EPOCHES):
-    print("=" * 20)
-    print(f"EPOCH {epoch + 1}/{N_EPOCHES}")
-        
-    train_num_batches = ceil(len(train_loader.dataset) / float(train_loader.batch_size))
+with wandb.init(project=wandb_project_name, config=wandb_config) as run:
+    best_validation_loss = float('inf')
+    best_validation_loss_epoch = -1
+    for epoch in range(N_EPOCHES):
+        print("=" * 20)
+        print(f"EPOCH {epoch + 1}/{N_EPOCHES}")
+            
+        train_num_batches = ceil(len(train_loader.dataset) / float(train_loader.batch_size))
 
-    epoch_train_loss = 0
-    for i, train_batch in enumerate(train_loader):
-        train_imgs, train_masks = train_batch['img'].to(device), train_batch['mask'].to(device)
-        optimizer.zero_grad()
-        pred = model(train_imgs)
-        loss = loss_fun(pred, train_masks)
-        loss.backward()
-        optimizer.step()
-        epoch_train_loss += loss.item()
-        print(f"\t{i}/{train_num_batches} train_loss: {loss.item():.4f}")
-    epoch_train_loss /= train_num_batches
-    print(f"\tAverage train loss: {epoch_train_loss:.4f}")
+        epoch_train_loss = 0
+        for i, train_batch in enumerate(train_loader):
+            train_imgs, train_masks = train_batch['img'].to(device), train_batch['mask'].to(device)
+            optimizer.zero_grad()
+            pred = model(train_imgs)
+            loss = loss_fun(pred, train_masks)
+            loss.backward()
+            optimizer.step()
+            epoch_train_loss += loss.item()
+            print(f"\t{i}/{train_num_batches} train_loss: {loss.item():.4f}")
+        epoch_train_loss /= train_num_batches
+        print(f"\tAverage train loss: {epoch_train_loss:.4f}")
+        run.log({'train_loss': epoch_train_loss})
 
-    with torch.no_grad():
-        validation_num_batches = ceil(len(validation_loader.dataset) / float(validation_loader.batch_size))
+        with torch.no_grad():
+            validation_num_batches = ceil(len(validation_loader.dataset) / float(validation_loader.batch_size))
 
-        epoch_validation_loss = 0
-        for validation_batch in validation_loader:
-            validation_imgs, validation_masks = validation_batch['img'].to(device), validation_batch['mask'].to(device)
-            pred = model(validation_imgs)
-            loss = loss_fun(pred, validation_masks)
-            epoch_validation_loss += loss.item()
-        epoch_validation_loss /= validation_num_batches
-        print(f"\tAverage validation loss: {epoch_validation_loss:.4f}")
+            epoch_validation_loss = 0
+            for validation_batch in validation_loader:
+                validation_imgs, validation_masks = validation_batch['img'].to(device), validation_batch['mask'].to(device)
+                pred = model(validation_imgs)
+                loss = loss_fun(pred, validation_masks)
+                epoch_validation_loss += loss.item()
+            epoch_validation_loss /= validation_num_batches
+            print(f"\tAverage validation loss: {epoch_validation_loss:.4f}")
+            run.log({'validation_loss': epoch_validation_loss})
 
-        # ADD HERE EARLY STOPPING
+            # ADD HERE EARLY STOPPING
 
-        if epoch_validation_loss < best_validation_loss:
-            best_validation_loss = epoch_validation_loss
-            best_validation_loss_epoch = epoch + 1
+            if epoch_validation_loss < best_validation_loss:
+                best_validation_loss = epoch_validation_loss
+                best_validation_loss_epoch = epoch + 1
+
+                torch.save({
+                    'epoch': epoch,
+                    'model_state_dict': model.state_dict(),
+                    'optimizer_state_dict': optimizer.state_dict(),
+                    'train_loss': epoch_train_loss,
+                    'validation_loss': epoch_validation_loss,
+                }, os.path.join(checkpoint_dir, 'best.pth'))
 
             torch.save({
                 'epoch': epoch,
@@ -83,15 +106,7 @@ for epoch in range(N_EPOCHES):
                 'optimizer_state_dict': optimizer.state_dict(),
                 'train_loss': epoch_train_loss,
                 'validation_loss': epoch_validation_loss,
-            }, os.path.join(checkpoint_dir, 'best.pth'))
+            }, os.path.join(checkpoint_dir, 'last.pth'))
 
-        torch.save({
-            'epoch': epoch,
-            'model_state_dict': model.state_dict(),
-            'optimizer_state_dict': optimizer.state_dict(),
-            'train_loss': epoch_train_loss,
-            'validation_loss': epoch_validation_loss,
-        }, os.path.join(checkpoint_dir, 'last.pth'))
-
-print(f"TRAIN COMPLETED!")
-print(f"best_metric: {best_validation_loss:.4f} at epoch: {best_validation_loss_epoch}")
+    print(f"TRAIN COMPLETED!")
+    print(f"best_metric: {best_validation_loss:.4f} at epoch: {best_validation_loss_epoch}")
