@@ -7,7 +7,6 @@ import torch
 from monai.networks.nets import UNet
 
 from dataset import test_dataset
-from pltutils import apply_mask
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -38,19 +37,30 @@ pred_mask = pred_mask.squeeze(0).cpu()
 test_img = test_img.permute(1, 2, 0).cpu()
 test_mask = test_mask.permute(1, 2, 0).cpu()
 
-fig, axes = plt.subplots(1, 3, figsize=(18, 12))
-axes[0].imshow(test_img)
-axes[0].set_title('Original Eye Image', fontsize=14, fontweight='bold')
-axes[0].axis('off')
+fig, axes = plt.subplots(2, 3, figsize=(18, 12))
+axes[0, 0].imshow(test_img, cmap='gray')
+axes[0, 0].set_title('Original Eye Image', fontsize=14, fontweight='bold')
+axes[0, 0].axis('off')
 
-pred_overlay = apply_mask(test_img, pred_mask)
-axes[1].imshow(pred_overlay)
-axes[1].set_title('Image + Predicted Mask', fontsize=14, fontweight='bold')
-axes[1].axis('off')
+axes[0, 1].imshow(pred_mask.squeeze(0))
+axes[0, 1].set_title('Predicted Mask', fontsize=14, fontweight='bold')
+axes[0, 1].axis('off')
 
-true_overlay = apply_mask(test_img, test_mask)
-axes[2].imshow(true_overlay)
-axes[2].set_title('Image + True Mask', fontsize=14, fontweight='bold')
-axes[2].axis('off')
+axes[0, 2].imshow(test_mask.squeeze(0))
+axes[0, 2].set_title('True Mask', fontsize=14, fontweight='bold')
+axes[0, 2].axis('off')
 
-plt.show()
+axes[1, 0].axis('off')
+
+axes[1, 1].imshow(test_img, cmap='gray')
+axes[1, 1].imshow(pred_mask.squeeze(0), alpha=0.5)
+axes[1, 1].set_title('Image + Predicted Mask', fontsize=14, fontweight='bold')
+axes[1, 1].axis('off')
+
+axes[1, 2].imshow(test_img, cmap='gray')
+axes[1, 2].imshow(test_mask.squeeze(0), alpha=0.5)
+axes[1, 2].set_title('Image + True Mask', fontsize=14, fontweight='bold')
+axes[1, 2].axis('off')
+
+plt.savefig(os.path.join(os.path.dirname(__file__), 'plot.png'), dpi=150, bbox_inches='tight')
+plt.close(fig)
