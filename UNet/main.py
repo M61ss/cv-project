@@ -12,7 +12,8 @@ import monai
 
 import wandb
 
-from dataset import train_loader, validation_loader
+from dataset import train_loader, val_loader
+from earlystopper import EarlyStopping
 
 
 monai.config.print_config()
@@ -50,8 +51,10 @@ wandb_config = {
     "epochs": N_EPOCHES,
 }
 
-best_validation_loss = float('inf')
-best_validation_loss_epoch = -1
+best_val_loss = float('inf')
+best_val_loss_epoch = -1
+
+early_stop = EarlyStopping(delta=0.1, verbose=True)
 
 with wandb.init(project=wandb_project_name, config=wandb_config) as run:
     for epoch in range(N_EPOCHES):
@@ -59,10 +62,10 @@ with wandb.init(project=wandb_project_name, config=wandb_config) as run:
         print(f"EPOCH {epoch + 1}/{N_EPOCHES}")
             
         train_num_batches = ceil(len(train_loader.dataset) / float(train_loader.batch_size))
-        validation_num_batches = ceil(len(validation_loader.dataset) / float(validation_loader.batch_size))
+        val_num_batches = ceil(len(val_loader.dataset) / float(val_loader.batch_size))
 
         train_loss = 0
-        validation_loss = 0
+        val_loss = 0
 
         for i, train_batch in enumerate(train_loader):
             train_imgs, train_masks = train_batch['img'].to(device), train_batch['mask'].to(device)
@@ -79,28 +82,28 @@ with wandb.init(project=wandb_project_name, config=wandb_config) as run:
         run.log({'train_loss': train_loss})
 
         with torch.no_grad():
-            for validation_batch in validation_loader:
-                validation_imgs, validation_masks = validation_batch['img'].to(device), validation_batch['mask'].to(device)
-                pred = model(validation_imgs)
-                loss = loss_fun(pred, validation_masks)
-                validation_loss += loss.item()
+            for val_batch in val_loader:
+                val_imgs, val_masks = val_batch['img'].to(device), val_batch['mask'].to(device)
+                pred = model(val_imgs)
+                loss = loss_fun(pred, val_masks)
+                val_loss += loss.item()
 
-            validation_loss /= validation_num_batches
-            print(f"\tAverage validation loss: {validation_loss:.4f}")
-            run.log({'validation_loss': validation_loss})
+            val_loss /= val_num_batches
+            print(f"\tAverage validation loss: {val_loss:.4f}")
+            run.log({'validation_loss': val_loss})
 
-            # ADD HERE EARLY STOPPING
+            early_stop.check_early_stop(val_loss)
 
-            if validation_loss < best_validation_loss:
-                best_validation_loss = validation_loss
-                best_validation_loss_epoch = epoch + 1
+            if val_loss < best_val_loss:
+                best_val_loss = val_loss
+                best_val_loss_epoch = epoch + 1
 
                 torch.save({
                     'epoch': epoch,
                     'model_state_dict': model.state_dict(),
                     'optimizer_state_dict': optimizer.state_dict(),
                     'train_loss': train_loss,
-                    'validation_loss': validation_loss,
+                    'validation_loss': val_loss,
                 }, os.path.join(checkpoint_dir, 'best.pth'))
 
             torch.save({
@@ -108,8 +111,8 @@ with wandb.init(project=wandb_project_name, config=wandb_config) as run:
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
                 'train_loss': train_loss,
-                'validation_loss': validation_loss,
+                'validation_loss': val_loss,
             }, os.path.join(checkpoint_dir, 'last.pth'))
 
     print(f"TRAIN COMPLETED!")
-    print(f"best_metric: {best_validation_loss:.4f} at epoch: {best_validation_loss_epoch}")
+    print(f"best_metric: {best_val_loss:.4f} at epoch: {best_val_loss_epoch}")
