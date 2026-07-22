@@ -54,7 +54,7 @@ wandb_config = {
 best_val_loss = float('inf')
 best_val_loss_epoch = -1
 
-early_stop = EarlyStopping(delta=0.1, verbose=True)
+early_stop = EarlyStopping(delta=0.05, verbose=True)
 
 with wandb.init(project=wandb_project_name, config=wandb_config) as run:
     for epoch in range(N_EPOCHES):
@@ -105,6 +105,12 @@ with wandb.init(project=wandb_project_name, config=wandb_config) as run:
                     'train_loss': train_loss,
                     'validation_loss': val_loss,
                 }, os.path.join(checkpoint_dir, 'best.pth'))
+
+            if early_stop.stop_training:
+                print('#' * 20)
+                print(f"EARLY STOPPING REACHED at epoch {epoch}")
+                print('#' * 20)
+                break
 
             torch.save({
                 'epoch': epoch,
