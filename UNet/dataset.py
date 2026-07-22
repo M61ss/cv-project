@@ -57,7 +57,7 @@ test_dataset = Dataset(
     transform=test_transforms
 )
 
-train_loader = DataLoader(
+train_dl = DataLoader(
     train_dataset,
     batch_size=64,
     num_workers=8,
@@ -67,7 +67,7 @@ train_loader = DataLoader(
     pin_memory=torch.cuda.is_available(),
     collate_fn=list_data_collate,
 )
-val_loader = DataLoader(
+val_dl = DataLoader(
     val_dataset,
     batch_size=64,
     num_workers=8,
@@ -76,7 +76,7 @@ val_loader = DataLoader(
     pin_memory=torch.cuda.is_available(),
     collate_fn=list_data_collate,
 )
-test_loader = DataLoader(
+test_dl = DataLoader(
     test_dataset,
     batch_size=64,
     num_workers=8,

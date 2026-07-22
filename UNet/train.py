@@ -12,7 +12,7 @@ import monai
 
 import wandb
 
-from dataset import train_loader, val_loader
+from dataset import train_dl, val_dl
 from earlystopper import EarlyStopping
 
 
@@ -61,13 +61,13 @@ with wandb.init(project=wandb_project_name, config=wandb_config) as run:
         print("=" * 20)
         print(f"EPOCH {epoch + 1}/{N_EPOCHES}")
             
-        train_num_batches = ceil(len(train_loader.dataset) / float(train_loader.batch_size))
-        val_num_batches = ceil(len(val_loader.dataset) / float(val_loader.batch_size))
+        train_num_batches = ceil(len(train_dl.dataset) / float(train_dl.batch_size))
+        val_num_batches = ceil(len(val_dl.dataset) / float(val_dl.batch_size))
 
         train_loss = 0
         val_loss = 0
 
-        for i, train_batch in enumerate(train_loader):
+        for i, train_batch in enumerate(train_dl):
             train_imgs, train_masks = train_batch['img'].to(device), train_batch['mask'].to(device)
             optimizer.zero_grad()
             pred = model(train_imgs)
@@ -82,7 +82,7 @@ with wandb.init(project=wandb_project_name, config=wandb_config) as run:
         run.log({'train_loss': train_loss})
 
         with torch.no_grad():
-            for val_batch in val_loader:
+            for val_batch in val_dl:
                 val_imgs, val_masks = val_batch['img'].to(device), val_batch['mask'].to(device)
                 pred = model(val_imgs)
                 loss = loss_fun(pred, val_masks)
