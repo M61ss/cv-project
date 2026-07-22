@@ -28,10 +28,13 @@ model.eval()
 sample_idx = torch.randint(len(test_dataset), size=(1,)).item()
 test_img, test_mask = test_dataset[sample_idx]['img'].to(device), test_dataset[sample_idx]['mask'].to(device)
 
-print(torch.unique(test_dataset[sample_idx]['mask']))
+print('True unique values:\t', torch.unique(test_dataset[sample_idx]['mask']))
 
 with torch.no_grad():
-    pred_mask = model(test_img.unsqueeze(0))
+    pred_logits = model(test_img.unsqueeze(0))
+    pred_prob = torch.sigmoid(pred_logits)
+    pred_mask = (pred_prob > 0.5).float().squeeze(0).squeeze(0).cpu()
+    print('Pred unique values:\t', torch.unique(pred_mask))
 
 pred_mask = pred_mask.squeeze(0).cpu()
 test_img = test_img.permute(1, 2, 0).cpu()
