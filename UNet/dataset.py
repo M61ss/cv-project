@@ -1,6 +1,5 @@
 import os
 from glob import glob
-from random import shuffle
 
 import torch
 
@@ -46,7 +45,7 @@ validation_dataset = Dataset(
 train_loader = DataLoader(
     train_dataset,
     batch_size=64,
-    num_workers=4,
+    num_workers=8,
     persistent_workers=True,
     prefetch_factor=4,
     shuffle=True,
@@ -56,7 +55,7 @@ train_loader = DataLoader(
 validation_loader = DataLoader(
     validation_dataset,
     batch_size=64,
-    num_workers=4,
+    num_workers=8,
     persistent_workers=True,
     prefetch_factor=4,
     pin_memory=torch.cuda.is_available(),
