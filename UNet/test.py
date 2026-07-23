@@ -36,9 +36,12 @@ with torch.no_grad():
     pred_mask = (pred_prob > 0.5).float().squeeze(0).squeeze(0).cpu()
     print('Pred unique values:\t', torch.unique(pred_mask))
 
-pred_mask = pred_mask.squeeze(0).cpu()
-test_img = test_img.permute(1, 2, 0).cpu()
-test_mask = test_mask.permute(1, 2, 0).cpu()
+pred_mask = pred_mask.squeeze(0).permute(1, 0).cpu()
+test_img = test_img.permute(2, 1, 0).cpu()
+test_mask = test_mask.permute(2, 1, 0).cpu()
+
+print('Image shape:\t\t', test_img.shape)
+print('Pred mask shape:\t', pred_mask.shape)
 
 fig, axes = plt.subplots(2, 3, figsize=(18, 12))
 axes[0, 0].imshow(test_img, cmap='gray')
