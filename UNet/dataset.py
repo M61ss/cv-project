@@ -14,12 +14,13 @@ data_dir = '/work/cvcs2026/LZMM/OpenEDS/openEDS/openEDS/train'
 
 images = sorted(glob(os.path.join(data_dir, 'images/*.png')))
 masks = sorted(glob(os.path.join(data_dir, 'masks/*.png')))
+labels = sorted(glob(os.path.join(data_dir, 'labels/*.npy')))
 # val_images = sorted(glob(os.path.join(val_dir, 'images/*.png')))
 # val_masks = sorted(glob(os.path.join(val_dir, 'masks/*.png')))
 # test_images = sorted(glob(os.path.join(test_dir, 'images/*.png')))
 # test_masks = sorted(glob(os.path.join(test_dir, 'masks/*.png')))
 
-train_files = [ {'img': img, 'mask': mask} for img, mask in zip(images, masks) ]
+train_files = [ {'img': img, 'mask': mask, 'label': label} for img, mask, label in zip(images, masks, labels) ]
 # val_files = [ {'img': img, 'mask': mask} for img, mask in zip(val_images, val_masks) ]
 # test_files = [ {'img': img, 'mask': mask} for img, mask in zip(test_images, test_masks) ]
 
@@ -29,7 +30,7 @@ print('Total images:\t', len(train_files))
 
 transforms = Compose(
     [
-        LoadImaged(keys=['img', 'mask']),
+        LoadImaged(keys=['img', 'mask', 'label']),
         EnsureChannelFirstd(keys=['img', 'mask']),
         ScaleIntensityd(keys=['img']),
     ]
