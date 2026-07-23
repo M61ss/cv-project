@@ -4,7 +4,7 @@ from glob import glob
 import torch
 from torch.utils.data.dataset import random_split
 
-from monai.transforms import Compose, LoadImaged, EnsureChannelFirstd, ScaleIntensityd
+from monai.transforms import Compose, LoadImaged, EnsureChannelFirstd, ScaleIntensityd, AsDiscreted
 from monai.data import Dataset, DataLoader, list_data_collate
 
 
@@ -31,8 +31,9 @@ print('Total images:\t', len(train_files))
 transforms = Compose(
     [
         LoadImaged(keys=['img', 'mask', 'label']),
-        EnsureChannelFirstd(keys=['img', 'mask']),
+        EnsureChannelFirstd(keys=['img', 'mask', 'label']),
         ScaleIntensityd(keys=['img']),
+        AsDiscreted(keys=['label'], to_onehot=4)
     ]
 )
 # val_transforms = Compose(
