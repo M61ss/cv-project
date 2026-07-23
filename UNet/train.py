@@ -27,7 +27,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model = UNet(
     spatial_dims=2,
     in_channels=1,
-    out_channels=1,
+    out_channels=4,
     channels=(16, 32, 64, 128, 256),
     strides=(2, 2, 2, 2),
     num_res_units=2
@@ -37,7 +37,7 @@ LR = 1e-4
 N_EPOCHES = 50
 
 loss_fun = DiceLoss(
-    sigmoid=True
+    softmax=True
 )
 
 optimizer = Adam(model.parameters(), lr=LR)
@@ -68,10 +68,13 @@ with wandb.init(project=wandb_project_name, config=wandb_config) as run:
         val_loss = 0
 
         for i, train_batch in enumerate(train_dl):
-            train_imgs, train_masks = train_batch['img'].to(device), train_batch['mask'].to(device)
+            train_imgs = train_batch['img'].to(device)
+            train_masks = train_batch['mask'].to(device)
+            train_labels = train_batch['label'].permute(0, 1, 3, 2).to(device)
+
             optimizer.zero_grad()
             pred = model(train_imgs)
-            loss = loss_fun(pred, train_masks)
+            loss = loss_fun(pred, train_labels)
             loss.backward()
             optimizer.step()
             train_loss += loss.item()
@@ -83,9 +86,12 @@ with wandb.init(project=wandb_project_name, config=wandb_config) as run:
 
         with torch.no_grad():
             for val_batch in val_dl:
-                val_imgs, val_masks = val_batch['img'].to(device), val_batch['mask'].to(device)
+                val_imgs = val_batch['img'].to(device)
+                val_masks = val_batch['mask'].to(device)
+                val_labels = val_batch['label'].permute(0, 1, 3, 2).to(device)
+
                 pred = model(val_imgs)
-                loss = loss_fun(pred, val_masks)
+                loss = loss_fun(pred, val_labels)
                 val_loss += loss.item()
 
             val_loss /= val_num_batches
