@@ -34,7 +34,7 @@ model = UNet(
 ).to(device)
 
 LR = 1e-4
-N_EPOCHES = 30
+N_EPOCHES = 50
 
 loss_fun = DiceLoss(
     sigmoid=True
