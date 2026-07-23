@@ -81,16 +81,16 @@ train_dl = DataLoader(
 val_dl = DataLoader(
     val_dataset,
     batch_size=64,
-    num_workers=8,
+    num_workers=6,
     persistent_workers=True,
-    prefetch_factor=4,
+    prefetch_factor=3,
     pin_memory=torch.cuda.is_available(),
     collate_fn=list_data_collate,
 )
 test_dl = DataLoader(
     test_dataset,
     batch_size=64,
-    num_workers=8,
+    num_workers=4,
     persistent_workers=False,
     prefetch_factor=2,
     pin_memory=torch.cuda.is_available(),
