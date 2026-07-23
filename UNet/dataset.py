@@ -22,6 +22,10 @@ train_files = [ {'img': img, 'mask': mask} for img, mask in zip(train_images, tr
 val_files = [ {'img': img, 'mask': mask} for img, mask in zip(val_images, val_masks) ]
 test_files = [ {'img': img, 'mask': mask} for img, mask in zip(test_images, test_masks) ]
 
+print('Train files:\t', len(train_files))
+print('Val files:\t', len(val_files))
+print('Test files:\t', len(test_files))
+
 train_transforms = Compose(
     [
         LoadImaged(keys=['img', 'mask']),
