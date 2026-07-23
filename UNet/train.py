@@ -54,7 +54,7 @@ wandb_config = {
 best_val_loss = float('inf')
 best_val_loss_epoch = -1
 
-early_stop = EarlyStopping(delta=0.05, patience=3, verbose=True)
+early_stop = EarlyStopping(delta=0.001, patience=5, verbose=True)
 
 with wandb.init(project=wandb_project_name, config=wandb_config) as run:
     for epoch in range(N_EPOCHES):
