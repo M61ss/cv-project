@@ -51,7 +51,7 @@ augmentation_transforms = Compose(
         LoadImaged(keys=['img', 'mask', 'label']),
         EnsureChannelFirstd(keys=['img', 'mask', 'label']),
         ScaleIntensityd(keys=['img']),
-        GaussianSmoothd(keys=['img'], sigma=1),
+        GaussianSmoothd(keys=['img'], sigma=10),
         AsDiscreted(keys=['label'], to_onehot=4)
     ]
 )
