@@ -33,7 +33,7 @@ model = UNet(
     num_res_units=2
 ).to(device)
 
-LR = 1e-4
+LR = 1e-5
 N_EPOCHES = 50
 
 loss_fun = DiceLoss(
