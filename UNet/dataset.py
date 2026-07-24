@@ -99,7 +99,7 @@ print('Augmented test images:\t', len(test_dataset))
 
 train_dl = DataLoader(
     train_dataset,
-    batch_size=64,
+    batch_size=32,
     num_workers=12,
     persistent_workers=True,
     prefetch_factor=8,
@@ -109,7 +109,7 @@ train_dl = DataLoader(
 )
 val_dl = DataLoader(
     val_dataset,
-    batch_size=64,
+    batch_size=32,
     num_workers=12,
     persistent_workers=True,
     prefetch_factor=8,
