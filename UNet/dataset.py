@@ -1,74 +1,101 @@
 import os
 from glob import glob
+import random
 
 import torch
-from torch.utils.data.dataset import random_split
+from torch.utils.data import ConcatDataset
 
-from monai.transforms import Compose, LoadImaged, EnsureChannelFirstd, ScaleIntensityd, AsDiscreted
+from monai.transforms import Compose, LoadImaged, EnsureChannelFirstd, ScaleIntensityd, AsDiscreted, GaussianSmoothd
 from monai.data import Dataset, DataLoader, list_data_collate
 
 
 data_dir = '/work/cvcs2026/LZMM/OpenEDS/openEDS/openEDS/train'
-# val_dir = '/work/cvcs2026/LZMM/OpenEDS/openEDS/openEDS/validation'
-# test_dir = '/work/cvcs2026/LZMM/OpenEDS/openEDS/openEDS/test'
 
 images = sorted(glob(os.path.join(data_dir, 'images/*.png')))
 masks = sorted(glob(os.path.join(data_dir, 'masks/*.png')))
 labels = sorted(glob(os.path.join(data_dir, 'labels/*.npy')))
-# val_images = sorted(glob(os.path.join(val_dir, 'images/*.png')))
-# val_masks = sorted(glob(os.path.join(val_dir, 'masks/*.png')))
-# test_images = sorted(glob(os.path.join(test_dir, 'images/*.png')))
-# test_masks = sorted(glob(os.path.join(test_dir, 'masks/*.png')))
 
-train_files = [ {'img': img, 'mask': mask, 'label': label} for img, mask, label in zip(images, masks, labels) ]
-# val_files = [ {'img': img, 'mask': mask} for img, mask in zip(val_images, val_masks) ]
-# test_files = [ {'img': img, 'mask': mask} for img, mask in zip(test_images, test_masks) ]
+files = [ {
+            'img': img, 
+            'mask': mask, 
+            'label': label
+        } for img, mask, label in zip(images, masks, labels)
+]
 
-print('Total images:\t', len(train_files))
-# print('Val files:\t', len(val_files))
-# print('Test files:\t', len(test_files))
+random.seed(42)
+shuffled_files = files.copy()
+random.shuffle(shuffled_files)
 
-transforms = Compose(
-    [
+n = len(shuffled_files)
+n_train = int(0.8 * n)
+n_val = int(0.1 * n)
+
+train_files = shuffled_files[:n_train]
+val_files = shuffled_files[n_train:n_train + n_val]
+test_files = shuffled_files[n_train + n_val:]
+
+print('Original train images:\t', len(train_files))
+print('Original val images:\t', len(val_files))
+print('Original test images:\t', len(test_files))
+
+original_transforms = Compose(
+    transforms=[
         LoadImaged(keys=['img', 'mask', 'label']),
         EnsureChannelFirstd(keys=['img', 'mask', 'label']),
         ScaleIntensityd(keys=['img']),
         AsDiscreted(keys=['label'], to_onehot=4)
     ]
 )
-# val_transforms = Compose(
-#     [
-#         LoadImaged(keys=['img', 'mask']),
-#         EnsureChannelFirstd(keys=['img', 'mask']),
-#         ScaleIntensityd(keys=['img']),
-#     ]
-# )
-# test_transforms = Compose(
-#     [
-#         LoadImaged(keys=['img', 'mask']),
-#         EnsureChannelFirstd(keys=['img', 'mask']),
-#         ScaleIntensityd(keys=['img']),
-#     ]
-# )
-
-dataset = Dataset(
-    data=train_files,
-    transform=transforms,
+augmentation_transforms = Compose(
+    transforms=[
+        LoadImaged(keys=['img', 'mask', 'label']),
+        EnsureChannelFirstd(keys=['img', 'mask', 'label']),
+        ScaleIntensityd(keys=['img']),
+        GaussianSmoothd(keys=['img'], sigma=1),
+        AsDiscreted(keys=['label'], to_onehot=4)
+    ]
 )
-# val_dataset = Dataset(
-#     data=val_files,
-#     transform=val_transforms,
-# )
-# test_dataset = Dataset(
-#     data=test_files,
-#     transform=test_transforms
-# )
 
-train_dataset, val_dataset, test_dataset = random_split(dataset, [0.8, 0.1, 0.1])
+train_dataset = ConcatDataset(
+    [
+        Dataset(
+            data=train_files,
+            transform=original_transforms
+        ),
+        Dataset(
+            data=train_files,
+            transform=augmentation_transforms
+        )
+    ]
+)
+val_dataset = ConcatDataset(
+    [
+        Dataset(
+            data=val_files,
+            transform=original_transforms
+        ),
+        Dataset(
+            data=val_files,
+            transform=augmentation_transforms
+        )
+    ]    
+)
+test_dataset = ConcatDataset(
+    [
+        Dataset(
+            data=test_files,
+            transform=original_transforms
+        ),
+        Dataset(
+            data=test_files,
+            transform=augmentation_transforms
+        )
+    ]
+)
 
-print('Train images:\t', len(train_dataset))
-print('Val images:\t', len(val_dataset))
-print('Test images:\t', len(test_dataset))
+print('Augmented train images:\t', len(train_dataset))
+print('Augmented val images:\t', len(val_dataset))
+print('Augmented test images:\t', len(test_dataset))
 
 train_dl = DataLoader(
     train_dataset,
