@@ -36,14 +36,14 @@ print('True unique values:\t', torch.unique(test_dataset[sample_idx]['label']))
 with torch.no_grad():
     pred_logits = model(test_img.unsqueeze(0))
     pred_prob = torch.sigmoid(pred_logits)
-    pred_label = (pred_prob > 0.5).float().squeeze(0)
+    pred_label = pred_prob.squeeze(0).argmax(dim=0)
     print('Pred unique values:\t', torch.unique(pred_label))
 
 print('Image shape:\t\t', test_img.shape)
 print('True label shape:\t', test_label.shape)
 print('Pred label shape:\t', pred_label.shape)
 
-pred_label = pred_label.argmax(dim=0).permute(1, 0).cpu()
+pred_label = pred_label.permute(1, 0).cpu()
 test_img = test_img.permute(2, 1, 0).cpu()
 test_label = test_label.argmax(dim=0).permute(0, 1).cpu()
 
