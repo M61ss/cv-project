@@ -7,6 +7,7 @@ import torch
 
 from monai.networks.nets import UNet
 
+from config import config
 from dataset import test_dataset
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -15,12 +16,12 @@ checkpoint = torch.load(os.path.join(os.path.dirname(__file__), 'checkpoints/bes
 
 model = UNet(
     spatial_dims=2,
-    in_channels=1,
-    out_channels=4,
-    channels=(4, 8, 16, 32),
-    strides=(2, 2, 2),
-    num_res_units=2,
-    dropout=0.5
+    in_channels=config['input_channels'],
+    out_channels=config['output_channels'],
+    channels=config['channels'],
+    strides=config['strides'],
+    num_res_units=config['num_res_units'],
+    dropout=config['dropout']
 ).to(device)
 
 model.load_state_dict(checkpoint['model_state_dict'])

@@ -12,6 +12,7 @@ import monai
 
 import wandb
 
+from config import config
 from dataset import train_dl, val_dl
 from earlystopper import EarlyStopping
 
@@ -23,19 +24,6 @@ checkpoint_dir = os.path.join(os.path.dirname(__file__), 'checkpoints')
 os.makedirs(checkpoint_dir, exist_ok=True)
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
-config = {
-    "dataset": "OpenEDS-blur-augmented",
-    'architecture': 'UNet',
-    'input_channels': 1,
-    'output_channels': 4,
-    'channels': (4, 8, 16, 32),
-    'strides': (2, 2, 2),
-    'num_res_units': 2,
-    'dropout': 0.5,
-    'learning_rate': 1e-4,
-    "epoches": 100
-}
 
 model = UNet(
     spatial_dims=2,
