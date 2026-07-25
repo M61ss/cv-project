@@ -26,7 +26,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 config = {
     "dataset": "OpenEDS-blur-augmented",
-    'model_name': 'UNet',
+    'architecture': 'UNet',
     'input_channels': 1,
     'output_channels': 4,
     'channels': (4, 8, 16, 32, 64),
