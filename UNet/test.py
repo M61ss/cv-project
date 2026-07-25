@@ -17,9 +17,10 @@ model = UNet(
     spatial_dims=2,
     in_channels=1,
     out_channels=4,
-    channels=(16, 32, 64, 128, 256),
-    strides=(2, 2, 2, 2),
-    num_res_units=2
+    channels=(4, 8, 16, 32),
+    strides=(2, 2, 2),
+    num_res_units=2,
+    dropout=0.5
 ).to(device)
 
 model.load_state_dict(checkpoint['model_state_dict'])

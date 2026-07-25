@@ -29,8 +29,8 @@ config = {
     'architecture': 'UNet',
     'input_channels': 1,
     'output_channels': 4,
-    'channels': (4, 8, 16, 32, 64),
-    'strides': (2, 2, 2, 2),
+    'channels': (4, 8, 16, 32),
+    'strides': (2, 2, 2),
     'num_res_units': 2,
     'dropout': 0.5,
     'learning_rate': 1e-4,
@@ -39,8 +39,8 @@ config = {
 
 model = UNet(
     spatial_dims=2,
-    in_channels=1,
-    out_channels=4,
+    in_channels=config['input_channels'],
+    out_channels=config['output_channels'],
     channels=config['channels'],
     strides=config['strides'],
     num_res_units=config['num_res_units'],
