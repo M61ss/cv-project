@@ -35,7 +35,7 @@ print('True unique values:\t', torch.unique(test_dataset[sample_idx]['label']))
 
 with torch.no_grad():
     pred_logits = model(test_img.unsqueeze(0))
-    pred_prob = torch.sigmoid(pred_logits)
+    pred_prob = torch.softmax(pred_logits, dim=1)
     pred_label = pred_prob.squeeze(0).argmax(dim=0)
     print('Pred unique values:\t', torch.unique(pred_label))
 
@@ -54,23 +54,23 @@ axes[0, 0].imshow(test_img, cmap='gray')
 axes[0, 0].set_title('Original Eye Image', fontsize=14, fontweight='bold')
 axes[0, 0].axis('off')
 
-axes[0, 1].imshow(pred_label, cmap=cmap, vmin=0, vmax=3)
+axes[0, 1].imshow(pred_label, cmap=cmap, vmin=0, vmax=3, interpolation='nearest')
 axes[0, 1].set_title('Predicted Label', fontsize=14, fontweight='bold')
 axes[0, 1].axis('off')
 
-axes[0, 2].imshow(test_label, cmap=cmap, vmin=0, vmax=3)
+axes[0, 2].imshow(test_label, cmap=cmap, vmin=0, vmax=3, interpolation='nearest')
 axes[0, 2].set_title('True Label', fontsize=14, fontweight='bold')
 axes[0, 2].axis('off')
 
 axes[1, 0].axis('off')
 
 axes[1, 1].imshow(test_img, cmap='gray')
-axes[1, 1].imshow(pred_label, alpha=0.5)
+axes[1, 1].imshow(pred_label, cmap=cmap, vmin=0, vmax=3, alpha=0.5, interpolation='nearest')
 axes[1, 1].set_title('Image + Predicted Label', fontsize=14, fontweight='bold')
 axes[1, 1].axis('off')
 
 axes[1, 2].imshow(test_img, cmap='gray')
-axes[1, 2].imshow(test_label, alpha=0.5)
+axes[1, 2].imshow(test_label, cmap=cmap, vmin=0, vmax=3, alpha=0.5, interpolation='nearest')
 axes[1, 2].set_title('Image + True Label', fontsize=14, fontweight='bold')
 axes[1, 2].axis('off')
 
