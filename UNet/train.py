@@ -24,42 +24,48 @@ os.makedirs(checkpoint_dir, exist_ok=True)
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
+config = {
+    "dataset": "OpenEDS-blur-augmented",
+    'model_name': 'UNet',
+    'input_channels': 1,
+    'output_channels': 4,
+    'channels': (4, 8, 16, 32, 64),
+    'strides': (2, 2, 2, 2),
+    'num_res_units': 2,
+    'dropout': 0.5,
+    'learning_rate': 1e-4,
+    "epoches": 100
+}
+
 model = UNet(
     spatial_dims=2,
     in_channels=1,
     out_channels=4,
-    channels=(16, 32, 64, 128, 256),
-    strides=(2, 2, 2, 2),
-    num_res_units=2
+    channels=config['channels'],
+    strides=config['strides'],
+    num_res_units=config['num_res_units'],
+    dropout=config['dropout']
 ).to(device)
-
-LR = 1e-5
-N_EPOCHES = 50
 
 loss_fun = DiceLoss(
     softmax=True
 )
 
-optimizer = Adam(model.parameters(), lr=LR)
+optimizer = Adam(model.parameters(), lr=config['learning_rate'])
 
 wandb.login()
 wandb_project_name = "UNet"
-wandb_config = {
-    "learning_rate": LR,
-    "architecture": "UNet",
-    "dataset": "OpenEDS",
-    "epochs": N_EPOCHES,
-}
+wandb_config = config
 
 best_val_loss = float('inf')
 best_val_loss_epoch = -1
 
-early_stop = EarlyStopping(delta=0.001, patience=5, verbose=True)
+early_stop = EarlyStopping(delta=0.001, patience=4, verbose=True)
 
 with wandb.init(project=wandb_project_name, config=wandb_config) as run:
-    for epoch in range(N_EPOCHES):
+    for epoch in range(config['epoches']):
         print("=" * 20)
-        print(f"EPOCH {epoch + 1}/{N_EPOCHES}")
+        print(f"EPOCH {epoch + 1}/{config['epoches']}")
             
         train_num_batches = ceil(len(train_dl.dataset) / float(train_dl.batch_size))
         val_num_batches = ceil(len(val_dl.dataset) / float(val_dl.batch_size))
