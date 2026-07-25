@@ -31,7 +31,7 @@ model.eval()
 sample_idx = torch.randint(len(test_dataset), size=(1,)).item()
 test_img = test_dataset[sample_idx]['img'].to(device)
 test_mask = test_dataset[sample_idx]['mask'].to(device)
-test_label = test_dataset[sample_idx]['label'].to(device)
+test_label = test_dataset[sample_idx]['label'].argmax(dim=0).to(device)
 
 print('True unique values:\t', torch.unique(test_dataset[sample_idx]['label']))
 
@@ -47,7 +47,7 @@ print('Pred label shape:\t', pred_label.shape)
 
 pred_label = pred_label.permute(1, 0).cpu()
 test_img = test_img.permute(2, 1, 0).cpu()
-test_label = test_label.argmax(dim=0).permute(0, 1).cpu()
+test_label = test_label.permute(0, 1).cpu()
 
 cmap = mcolors.ListedColormap(['black', 'blue', 'green', 'red'])
 
@@ -78,3 +78,6 @@ axes[1, 2].axis('off')
 
 plt.savefig(os.path.join(os.path.dirname(__file__), 'plot.png'), dpi=150, bbox_inches='tight')
 plt.close(fig)
+
+pupil_accuracy = ((pred_label == 3).float().sum() / (test_label == 3).float().sum()).item()
+print(f'Pupil accuracy: {pupil_accuracy:.4f}')
