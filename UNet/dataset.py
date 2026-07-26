@@ -5,7 +5,7 @@ import random
 import torch
 from torch.utils.data import ConcatDataset
 
-from monai.transforms import Compose, LoadImaged, EnsureChannelFirstd, ScaleIntensityd, AsDiscreted, GaussianSmoothd
+from monai.transforms import Compose, LoadImaged, EnsureChannelFirstd, ScaleIntensityd, AsDiscreted, RandGaussianSmoothd, SavitzkyGolaySmoothd, RandCoarseShuffled
 from monai.data import Dataset, DataLoader, list_data_collate
 
 
@@ -49,7 +49,19 @@ base_transforms = Compose(
 blur_transforms = Compose(
     transforms=[
         base_transforms,
-        GaussianSmoothd(keys=['img'], sigma=10),
+        RandGaussianSmoothd(keys=['img'], sigma_x=(7, 10), sigma_y=(7, 12), prob=1),
+    ]
+)
+motion_blur_transforms = Compose(
+    transforms=[
+        base_transforms,
+        RandGaussianSmoothd(keys=['img'], sigma_y=(6, 8), prob=1),
+    ]
+)
+coarse_transforms = Compose(
+    transforms=[
+        base_transforms,
+        RandCoarseShuffled(keys=['img'], holes=10, spatial_size=70, prob=1),
     ]
 )
 
@@ -57,11 +69,19 @@ train_dataset = ConcatDataset(
     [
         Dataset(
             data=train_files,
-            transform=base_transforms
+            transform=base_transforms,
         ),
         Dataset(
             data=train_files,
-            transform=blur_transforms
+            transform=blur_transforms,
+        ),
+        Dataset(
+            data=train_files[:len(train_files)//2],
+            transform=motion_blur_transforms,
+        ),
+        Dataset(
+            data=train_files,
+            transform=coarse_transforms,
         )
     ]
 )
@@ -74,6 +94,14 @@ val_dataset = ConcatDataset(
         Dataset(
             data=val_files,
             transform=blur_transforms
+        ),
+        Dataset(
+            data=train_files[:len(train_files)//2],
+            transform=motion_blur_transforms,
+        ),
+        Dataset(
+            data=train_files,
+            transform=coarse_transforms,
         )
     ]    
 )
@@ -86,6 +114,14 @@ test_dataset = ConcatDataset(
         Dataset(
             data=test_files,
             transform=blur_transforms
+        ),
+        Dataset(
+            data=train_files[:len(train_files)//2],
+            transform=motion_blur_transforms,
+        ),
+        Dataset(
+            data=train_files,
+            transform=coarse_transforms,
         )
     ]
 )
