@@ -1,5 +1,4 @@
 import os
-from math import ceil
 
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
@@ -7,10 +6,9 @@ import matplotlib.colors as mcolors
 import torch
 
 from monai.networks.nets import UNet
-from monai.losses import DiceLoss
 
 from config import config
-from dataset import test_dataset, test_dl
+from dataset import test_dataset
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
