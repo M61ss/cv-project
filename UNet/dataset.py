@@ -38,7 +38,7 @@ print('Original train images:\t', len(train_files))
 print('Original val images:\t', len(val_files))
 print('Original test images:\t', len(test_files))
 
-original_transforms = Compose(
+base_transforms = Compose(
     transforms=[
         LoadImaged(keys=['img', 'mask', 'label']),
         EnsureChannelFirstd(keys=['img', 'mask', 'label']),
@@ -48,11 +48,8 @@ original_transforms = Compose(
 )
 blur_transforms = Compose(
     transforms=[
-        LoadImaged(keys=['img', 'mask', 'label']),
-        EnsureChannelFirstd(keys=['img', 'mask', 'label']),
-        ScaleIntensityd(keys=['img']),
+        base_transforms,
         GaussianSmoothd(keys=['img'], sigma=10),
-        AsDiscreted(keys=['label'], to_onehot=4)
     ]
 )
 
@@ -60,7 +57,7 @@ train_dataset = ConcatDataset(
     [
         Dataset(
             data=train_files,
-            transform=original_transforms
+            transform=base_transforms
         ),
         Dataset(
             data=train_files,
@@ -72,7 +69,7 @@ val_dataset = ConcatDataset(
     [
         Dataset(
             data=val_files,
-            transform=original_transforms
+            transform=base_transforms
         ),
         Dataset(
             data=val_files,
@@ -84,7 +81,7 @@ test_dataset = ConcatDataset(
     [
         Dataset(
             data=test_files,
-            transform=original_transforms
+            transform=base_transforms
         ),
         Dataset(
             data=test_files,
