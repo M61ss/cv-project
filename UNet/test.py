@@ -6,21 +6,20 @@ import torch
 from monai.networks.nets import UNet
 from monai.losses import DiceLoss
 
-from config import run
 from dataset import test_dl
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-checkpoint = torch.load(os.path.join(os.path.dirname(__file__), f'checkpoints/best-{run.name}.pth'))
+checkpoint = torch.load(os.path.join(os.path.dirname(__file__), f'checkpoints/best-.pth'))
 
 model = UNet(
     spatial_dims=2,
-    in_channels=run.config['input_channels'],
-    out_channels=run.config['output_channels'],
-    channels=run.config['channels'],
-    strides=run.config['strides'],
-    num_res_units=run.config['num_res_units'],
-    dropout=run.config['dropout']
+    in_channels=1,
+    out_channels=4,
+    channels=(8, 16, 32, 64, 128),
+    strides=(2, 2, 2, 2),
+    num_res_units=3,
+    dropout=0.0
 ).to(device)
 
 model.load_state_dict(checkpoint['model_state_dict'])
