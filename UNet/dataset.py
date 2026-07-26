@@ -76,10 +76,6 @@ train_dataset = ConcatDataset(
             transform=blur_transforms,
         ),
         Dataset(
-            data=train_files[:len(train_files)//2],
-            transform=motion_blur_transforms,
-        ),
-        Dataset(
             data=train_files,
             transform=coarse_transforms,
         )
@@ -96,11 +92,7 @@ val_dataset = ConcatDataset(
             transform=blur_transforms
         ),
         Dataset(
-            data=train_files[:len(train_files)//2],
-            transform=motion_blur_transforms,
-        ),
-        Dataset(
-            data=train_files,
+            data=val_files,
             transform=coarse_transforms,
         )
     ]    
@@ -116,11 +108,11 @@ test_dataset = ConcatDataset(
             transform=blur_transforms
         ),
         Dataset(
-            data=train_files[:len(train_files)//2],
+            data=test_files,
             transform=motion_blur_transforms,
         ),
         Dataset(
-            data=train_files,
+            data=test_files,
             transform=coarse_transforms,
         )
     ]
