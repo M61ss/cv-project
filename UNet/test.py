@@ -79,5 +79,5 @@ axes[1, 2].axis('off')
 plt.savefig(os.path.join(os.path.dirname(__file__), 'plot.png'), dpi=150, bbox_inches='tight')
 plt.close(fig)
 
-pupil_accuracy = ((pred_label == 3).float().sum() / (test_label == 3).float().sum()).item()
+pupil_accuracy = (((pred_label == 3) * (test_label == 3)).float().sum() / (test_label == 3).float().sum()).item()
 print(f'Pupil accuracy: {pupil_accuracy:.4f}')
