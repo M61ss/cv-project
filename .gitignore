@@ -189,5 +189,5 @@ pyrightconfig.json
 runs/
 wandb/
 plot.png
-best.pth
-last.pth
+best*.pth
+last*.pth
