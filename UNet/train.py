@@ -30,7 +30,7 @@ optimizer = Adam(model.parameters(), lr=run.config['learning_rate'])
 best_val_loss = float('inf')
 best_val_loss_epoch = -1
 
-early_stop = EarlyStopping(delta=0.001, patience=4, verbose=True)
+early_stop = EarlyStopping(delta=0.001, patience=10, verbose=True)
 
 with run:
     for epoch in range(run.config['epoches']):
