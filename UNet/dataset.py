@@ -46,7 +46,7 @@ original_transforms = Compose(
         AsDiscreted(keys=['label'], to_onehot=4)
     ]
 )
-augmentation_transforms = Compose(
+blur_transforms = Compose(
     transforms=[
         LoadImaged(keys=['img', 'mask', 'label']),
         EnsureChannelFirstd(keys=['img', 'mask', 'label']),
@@ -64,7 +64,7 @@ train_dataset = ConcatDataset(
         ),
         Dataset(
             data=train_files,
-            transform=augmentation_transforms
+            transform=blur_transforms
         )
     ]
 )
@@ -76,7 +76,7 @@ val_dataset = ConcatDataset(
         ),
         Dataset(
             data=val_files,
-            transform=augmentation_transforms
+            transform=blur_transforms
         )
     ]    
 )
@@ -88,7 +88,7 @@ test_dataset = ConcatDataset(
         ),
         Dataset(
             data=test_files,
-            transform=augmentation_transforms
+            transform=blur_transforms
         )
     ]
 )
