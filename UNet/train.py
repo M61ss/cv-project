@@ -61,6 +61,7 @@ with wandb.init(project=wandb_project_name, config=wandb_config) as run:
         train_loss = 0
         val_loss = 0
 
+        model.train()
         for i, train_batch in enumerate(train_dl):
             train_imgs = train_batch['img'].to(device)
             train_masks = train_batch['mask'].to(device)
@@ -79,6 +80,7 @@ with wandb.init(project=wandb_project_name, config=wandb_config) as run:
         run.log({'train_loss': train_loss})
 
         with torch.no_grad():
+            model.eval()
             for val_batch in val_dl:
                 val_imgs = val_batch['img'].to(device)
                 val_masks = val_batch['mask'].to(device)
