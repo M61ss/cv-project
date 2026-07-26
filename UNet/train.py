@@ -88,7 +88,7 @@ with run:
                     'optimizer_state_dict': optimizer.state_dict(),
                     'train_loss': train_loss,
                     'validation_loss': val_loss,
-                }, os.path.join(checkpoint_dir, 'best.pth'))
+                }, os.path.join(checkpoint_dir, f'best-{run.name}.pth'))
 
             if early_stop.stop_training:
                 print('#' * 20)
@@ -102,7 +102,7 @@ with run:
                 'optimizer_state_dict': optimizer.state_dict(),
                 'train_loss': train_loss,
                 'validation_loss': val_loss,
-            }, os.path.join(checkpoint_dir, 'last.pth'))
+            }, os.path.join(checkpoint_dir, f'last-{run.name}.pth'))
 
     print(f"TRAIN COMPLETED!")
     print(f"best_metric: {best_val_loss:.4f} at epoch: {best_val_loss_epoch}")
