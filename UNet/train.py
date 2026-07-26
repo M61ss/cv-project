@@ -1,5 +1,3 @@
-import logging
-import sys
 import os
 from math import ceil
 
@@ -8,52 +6,36 @@ from torch.optim import Adam
 from monai.networks.nets import UNet
 from monai.losses import DiceLoss
 
-import monai
-
-import wandb
-
-from config import config
+from config import run, device, checkpoint_dir
 from dataset import train_dl, val_dl
 from earlystopper import EarlyStopping
 
 
-monai.config.print_config()
-logging.basicConfig(stream=sys.stdout, level=logging.INFO)
-
-checkpoint_dir = os.path.join(os.path.dirname(__file__), 'checkpoints')
-os.makedirs(checkpoint_dir, exist_ok=True)
-
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
 model = UNet(
     spatial_dims=2,
-    in_channels=config['input_channels'],
-    out_channels=config['output_channels'],
-    channels=config['channels'],
-    strides=config['strides'],
-    num_res_units=config['num_res_units'],
-    dropout=config['dropout']
+    in_channels=run.config['input_channels'],
+    out_channels=run.config['output_channels'],
+    channels=run.config['channels'],
+    strides=run.config['strides'],
+    num_res_units=run.config['num_res_units'],
+    dropout=run.config['dropout']
 ).to(device)
 
 loss_fun = DiceLoss(
     softmax=True
 )
 
-optimizer = Adam(model.parameters(), lr=config['learning_rate'])
-
-wandb.login()
-wandb_project_name = "UNet"
-wandb_config = config
+optimizer = Adam(model.parameters(), lr=run.config['learning_rate'])
 
 best_val_loss = float('inf')
 best_val_loss_epoch = -1
 
 early_stop = EarlyStopping(delta=0.001, patience=4, verbose=True)
 
-with wandb.init(project=wandb_project_name, config=wandb_config) as run:
-    for epoch in range(config['epoches']):
+with run:
+    for epoch in range(run.config['epoches']):
         print("=" * 20)
-        print(f"EPOCH {epoch + 1}/{config['epoches']}")
+        print(f"EPOCH {epoch + 1}/{run.config['epoches']}")
             
         train_num_batches = ceil(len(train_dl.dataset) / float(train_dl.batch_size))
         val_num_batches = ceil(len(val_dl.dataset) / float(val_dl.batch_size))
