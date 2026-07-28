@@ -114,4 +114,4 @@ print('@' * 20)
 print('Proceed with test...')
 print('\n\n')
 
-test_model(model)
+test_model(model, loss_fun)
