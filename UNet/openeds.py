@@ -9,6 +9,22 @@ from monai.transforms import Compose, LoadImaged, EnsureChannelFirstd, ScaleInte
 from monai.data import Dataset, DataLoader, list_data_collate
 
 
+def dataset_info():
+    print('-' * 30)
+    print('Name: OpenEDS')
+    print()
+    print('Original dataset:')
+    print('\t- Train images:\t', len(train_files))
+    print('\t- Val images:\t', len(val_files))
+    print('\t- Test images:\t', len(test_files))
+    print()
+    print('Post augmentation:')
+    print('\t- Train images:\t', len(train_dataset))
+    print('\t- Val images:\t', len(val_dataset))
+    print('\t- Test images:\t', len(test_dataset))
+    print('-' * 30)
+
+
 data_dir = '/work/cvcs2026/LZMM/OpenEDS/openEDS/openEDS/train'
 
 images = sorted(glob(os.path.join(data_dir, 'images/*.png')))
@@ -33,10 +49,6 @@ n_val = int(0.1 * n)
 train_files = shuffled_files[:n_train]
 val_files = shuffled_files[n_train:n_train + n_val]
 test_files = shuffled_files[n_train + n_val:]
-
-print('Original train images:\t', len(train_files))
-print('Original val images:\t', len(val_files))
-print('Original test images:\t', len(test_files))
 
 base_transforms = Compose(
     transforms=[
@@ -118,10 +130,6 @@ test_dataset = ConcatDataset(
     ]
 )
 
-print('Augmented train images:\t', len(train_dataset))
-print('Augmented val images:\t', len(val_dataset))
-print('Augmented test images:\t', len(test_dataset))
-
 train_dl = DataLoader(
     train_dataset,
     batch_size=32,
@@ -150,3 +158,6 @@ test_dl = DataLoader(
     pin_memory=torch.cuda.is_available(),
     collate_fn=list_data_collate,
 )
+
+if __name__=='__main__':
+    dataset_info()
