@@ -2,15 +2,21 @@ import os
 from math import ceil
 
 import torch
+from torchinfo import summary
 
 from monai.networks.nets import UNet
 from monai.losses import DiceLoss
 from monai.metrics import DiceMetric
 
-from openeds import test_dl
+from openeds import test_dl, dataset_info
 
 
 def test_model(model: UNet, loss_fun):
+    print('Dataset information:')
+    dataset_info()
+    print('Model information:')
+    summary(model)
+
     model.eval()
 
     dice_metric = DiceMetric(
