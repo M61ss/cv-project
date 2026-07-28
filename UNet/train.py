@@ -4,11 +4,10 @@ from math import ceil
 import torch
 from torch.optim import Adam
 from monai.networks.nets import UNet
-from monai.metrics import DiceMetric
 from monai.losses import DiceLoss
 
 from .config import run, device, checkpoint_dir
-from .openeds import train_dl, val_dl, test_dl
+from .openeds import train_dl, val_dl
 from .earlystopper import EarlyStopping
 from .test import test_model
 
