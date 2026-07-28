@@ -6,7 +6,7 @@ import torch
 from monai.networks.nets import UNet
 from monai.losses import DiceLoss
 
-from openeds import test_dl
+from dynunet.openeds import test_dl
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 

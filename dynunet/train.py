@@ -6,9 +6,9 @@ from torch.optim import Adam
 from monai.networks.nets import DynUNet
 from monai.losses import DiceLoss
 
-from config import run, device, checkpoint_dir
-from openeds import train_dl, val_dl
-from earlystopper import EarlyStopping
+from dynunet.config import run, device, checkpoint_dir
+from dynunet.openeds import train_dl, val_dl
+from dynunet.earlystopper import EarlyStopping
 
 model = DynUNet(
     spatial_dims=2,
