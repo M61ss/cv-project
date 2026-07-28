@@ -27,6 +27,7 @@ def test_model(model: UNet, loss_fun):
 
             pred_labels = model(test_imgs)
             loss = loss_fun(pred_labels, test_labels)
+            dice_metric(pred_labels, test_labels)
             test_loss += loss.item()
 
         test_loss /= test_num_batches
@@ -34,9 +35,9 @@ def test_model(model: UNet, loss_fun):
         print(f"Average test loss: {test_loss:.4f}")
         print('-' * 20)
         print('Dice metric:')
-        print(f'\t- mean:\t\t{dice_metric.aggregate(reduction="mean")}')
-        print(f'\t- mean_batch:\t\t{dice_metric.aggregate(reduction="mean_batch")}')
-        print(f'\t- mean_channel:\t{dice_metric.aggregate(reduction="mean_channel")}')
+        print(f'\t- mean:\t\t{dice_metric.aggregate(reduction="mean").item()}')
+        print(f'\t- mean_batch:\t{dice_metric.aggregate(reduction="mean_batch").item()}')
+        print(f'\t- mean_channel:\t{dice_metric.aggregate(reduction="mean_channel").item()}')
         print('-' * 20)
 
 
