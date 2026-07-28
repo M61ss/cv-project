@@ -4,11 +4,13 @@ from math import ceil
 import torch
 from torch.optim import Adam
 from monai.networks.nets import UNet
+from monai.metrics import DiceMetric
 from monai.losses import DiceLoss
 
-from config import run, device, checkpoint_dir
-from openeds import train_dl, val_dl, test_dl
-from earlystopper import EarlyStopping
+from .config import run, device, checkpoint_dir
+from .openeds import train_dl, val_dl, test_dl
+from .earlystopper import EarlyStopping
+from .test import test_model
 
 
 model = UNet(
@@ -107,21 +109,9 @@ with run:
     print(f"TRAIN COMPLETED!")
     print(f"best_metric: {best_val_loss:.4f} at epoch: {best_val_loss_epoch}")
 
+print('\n')
+print('@' * 20)
+print('Proceed with test...')
+print('\n\n')
 
-with torch.no_grad():
-    test_num_batches = ceil(len(test_dl.dataset) / float(test_dl.batch_size))
-    test_loss = 0
-    pupil_accuracy = 0
-    for test_batch in test_dl:
-        test_imgs = test_batch['img'].to(device)
-        test_masks = test_batch['mask'].to(device)
-        test_labels = test_batch['label'].permute(0, 1, 3, 2).to(device)
-
-        pred_labels = model(test_imgs)
-        loss = loss_fun(pred_labels, test_labels)
-        test_loss += loss.item()
-
-    test_loss /= test_num_batches
-    print('@' * 20)
-    print(f"Average test loss: {test_loss:.4f}")
-    print('@' * 20)
+test_model(model)
