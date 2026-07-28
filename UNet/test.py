@@ -10,7 +10,9 @@ from monai.metrics import DiceMetric
 from openeds import test_dl
 
 
-def test_model(model: UNet):
+def test_model(model: UNet, loss_fun):
+    model.eval()
+
     dice_metric = DiceMetric(
         num_classes=model.out_channels
     )
@@ -54,10 +56,8 @@ model = UNet(
 
 model.load_state_dict(checkpoint['model_state_dict'])
 
-model.eval()
-
 loss_fun = DiceLoss(
     softmax=True
 )
 
-test_model(model)
+test_model(model, loss_fun)
