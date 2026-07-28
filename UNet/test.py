@@ -34,7 +34,7 @@ def test_model(model: UNet, loss_fun):
         print('-' * 20)
         print(f"Average test loss: {test_loss:.4f}")
         print('-' * 20)
-        print(f'Dice metric: {dice_metric.aggregate(reduction="mean").item()}')
+        print(f'Dice metric: {dice_metric.aggregate(reduction="mean").item():.4f}')
         print('-' * 20)
 
 
