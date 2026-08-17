@@ -2,10 +2,6 @@ import os
 
 import torch
 
-import numpy as np
-
-import h5py
-
 from monai.networks.nets import UNet
 
 from openeds import train_dl
@@ -28,14 +24,3 @@ model = UNet(
 model.load_state_dict(checkpoint['model_state_dict'])
 
 model.eval()
-
-with h5py.File('/work/cvcs2026/LZMM/COLET/data_v3.mat', 'r') as f:
-    ref_subject = f['Data']['subject_info'][0, 0]
-    ref_task = f['Data']['task'][0, 0]
-    
-    obj_subject = f[ref_subject]
-    obj_task = f[ref_task]
-    
-    print("subject_info[0]:", obj_subject)
-    print("task[0]:", obj_task)
-    
