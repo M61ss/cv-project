@@ -1,26 +1,37 @@
 import os
 
-import torch
+import pandas as pd
 
-from monai.networks.nets import UNet
+from sklearn.pipeline import Pipeline
+from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.feature_selection import SelectKBest
+from sklearn.ensemble import RandomForestClassifier
 
-from openeds import train_dl
+import joblib
 
 
-device = 'cuda' if torch.cuda.is_available() else 'cpu'
+df = pd.read_csv(os.path.join(os.path.dirname(__file__), 'COLET/dataset.csv'), sep=',')
 
-checkpoint = torch.load(os.path.join(os.path.dirname(__file__), f'checkpoints/blur-mask-aug.pth'))
+transformer = ColumnTransformer(transformers=[
 
-model = UNet(
-    spatial_dims=2,
-    in_channels=1,
-    out_channels=4,
-    channels=(8, 16, 32, 64, 128),
-    strides=(2, 2, 2, 2),
-    num_res_units=3,
-    dropout=0.0
-).to(device)
+    ], 
+    remainder='passthrough', 
+    n_jobs=-1
+)
 
-model.load_state_dict(checkpoint['model_state_dict'])
+rfc = RandomForestClassifier(
+    n_jobs=-1
+)
 
-model.eval()
+pipeline = Pipeline(steps=[
+    ('preprocessing', transformer),
+    ('training', rfc)
+])
+
+# training (fit)
+
+joblib.dump(
+    pipeline, 
+    os.path.join(os.path.dirname(__file__), 'regressor-weights/cl.pkl')
+)
