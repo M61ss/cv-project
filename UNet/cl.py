@@ -6,7 +6,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.feature_selection import SelectKBest
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestRegressor
 
 import joblib
 
@@ -20,7 +20,7 @@ transformer = ColumnTransformer(transformers=[
     n_jobs=-1
 )
 
-rfc = RandomForestClassifier(
+rfc = RandomForestRegressor(
     n_jobs=-1
 )
 
