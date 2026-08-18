@@ -11,7 +11,10 @@ from sklearn.ensemble import RandomForestRegressor
 import joblib
 
 
-df = pd.read_csv(os.path.join(os.path.dirname(__file__), 'COLET/dataset.csv'), sep=',')
+gaze_df = pd.read_csv(os.path.join(os.path.dirname(__file__), 'COLET/gaze_dataset.csv'), sep=',')
+pupil_df = pd.read_csv(os.path.join(os.path.dirname(__file__), 'COLET/pupil_dataset.csv'), sep=',')
+blinks_df = pd.read_csv(os.path.join(os.path.dirname(__file__), 'COLET/blinks_dataset.csv'), sep=',')
+annotation_df = pd.read_csv(os.path.join(os.path.dirname(__file__), 'COLET/annotation_dataset.csv'), sep=',')
 
 transformer = ColumnTransformer(transformers=[
 
