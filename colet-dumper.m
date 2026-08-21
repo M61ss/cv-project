@@ -1,18 +1,20 @@
 load("data_v3.mat")
-
 n = width(Data);
 
 si_table = table();
 for i = 1:n
-    si_table = [si_table; Data(i).subject_info];
+    si = table();
+    si.subject_id = i;
+    si = [si, Data(i).subject_info];
+    si_table = [si_table; si];
 end
-if ~isempty(si_table)
-    writetable(si_table, 'subject_info.csv')
-end
+writetable(si_table, 'subject_info.csv')
 
 gaze_dataset = table();
 for i = 1:n
-    si = Data(i).subject_info;
+    si = table();
+    si.subject_id = i;
+    si = [si, Data(i).subject_info];
     for t = 1:4
         gaze = Data(i).task(t).gaze;
         if ~isempty(gaze)
@@ -24,13 +26,13 @@ for i = 1:n
         end
     end
 end
-if ~isempty(gaze_dataset)
-    writetable(gaze_dataset, 'gaze_dataset.csv')
-end
+writetable(gaze_dataset, 'gaze_dataset.csv')
 
 pupil_dataset = table();
 for i = 1:n
-    si = Data(i).subject_info;
+    si = table();
+    si.subject_id = i;
+    si = [si, Data(i).subject_info];
     for t = 1:4
         pupil = Data(i).task(t).pupil;
         if ~isempty(pupil)
@@ -42,13 +44,13 @@ for i = 1:n
         end
     end
 end
-if ~isempty(pupil_dataset)
-    writetable(pupil_dataset, 'pupil_dataset.csv')
-end
+writetable(pupil_dataset, 'pupil_dataset.csv')
 
 blinks_dataset = table();
 for i = 1:n
-    si = Data(i).subject_info;
+    si = table();
+    si.subject_id = i;
+    si = [si, Data(i).subject_info];
     
     % If subject_info is a struct, convert it to a table
     if isstruct(si)
@@ -86,13 +88,13 @@ for i = 1:n
         end
     end
 end
-if ~isempty(blinks_dataset)
-    writetable(blinks_dataset, 'blinks_dataset.csv');
-end
+writetable(blinks_dataset, 'blinks_dataset.csv');
 
 annotation_dataset = table();
 for i = 1:n
-    si = Data(i).subject_info;
+    si = table();
+    si.subject_id = i;
+    si = [si, Data(i).subject_info];
     
     % Convert subject_info to a table if it is a struct
     if isstruct(si)
@@ -166,6 +168,4 @@ for i = 1:n
         end
     end
 end
-if ~isempty(annotation_dataset)
-    writetable(annotation_dataset, 'annotation_dataset.csv');
-end
+writetable(annotation_dataset, 'annotation_dataset.csv');
