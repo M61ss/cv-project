@@ -10,13 +10,8 @@ from sklearn.neighbors import KNeighborsRegressor
 
 import joblib
 
+from dataset import X, y
 
-data_dir = '/work/cvcs2026/LZMM/COLET/'
-
-gaze_df = pd.read_csv(os.path.join(data_dir, 'gaze_dataset.csv'), sep=',')
-pupil_df = pd.read_csv(os.path.join(data_dir, 'pupil_dataset.csv'), sep=',')
-blinks_df = pd.read_csv(os.path.join(data_dir, 'blinks_dataset.csv'), sep=',')
-annotation_df = pd.read_csv(os.path.join(data_dir, 'annotation_dataset.csv'), sep=',')
 
 transformer = ColumnTransformer(
     transformers=[
@@ -37,7 +32,7 @@ pipeline = Pipeline(
     ]
 )
 
-# training (fit)
+pipeline.fit(X, y)
 
 joblib.dump(
     pipeline, 
