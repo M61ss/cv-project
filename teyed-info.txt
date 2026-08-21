@@ -1,0 +1,100 @@
+
+Everything can be extracted with 7zip:
+https://7-zip.de/download.html
+
+
+If you use something from this folder please cite the paper:
+@article{ICML2021DS,
+  title={TEyeD: Over 20 million real-world eye images with Pupil, Eyelid, and Iris 2D and 3D Segmentations, 2D and 3D Landmarks, 3D Eyeball, Gaze Vector, and Eye Movement Types},
+  author={Fuhl, Wolfgang and Kasneci, Gjergji and Kasneci, Enkelejda},
+  journal={arXiv preprint arXiv:2102.02115},
+  year={2021}
+}
+
+
+
+This is a huge dataset and of course there can be some errors in it since I annotated it all alone. I plan to increase the data set in the future and also improve the quality further. So if you find some errors please write me wolfgang.fuhl@uni-tuebingen.de
+
+
+
+NvidiaAR and NvidiaVR have an additional "vid_index.txt" file since those are collections of multiple recordings per folder (The split is done automatically and most of it was checked by me but can contain some errors)
+
+
+Files:
+- vid_index: See description above (Only for NvidiaAR and NvidiaVR).
+- eye_movements: Error = 1,Blink = 2,Fixation = 3,Saccade = 4,SM = 5
+
+- validity_lid:-1=invalid, 1=valid (In addition you have the inaccuracy measure from the landmarks and the eye movements (FIX,SAC, and SM))
+- validity_iris:-1=invalid, 1=valid (In addition you have the inaccuracy measure from the landmarks and the eye movements (FIX,SAC, and SM))
+- validity_pupil:-1=invalid, 1=valid (In addition you have the inaccuracy measure from the landmarks and the eye movements (FIX,SAC, and SM))
+Note: All landmarks have also an additional average inaccuracy measure for each image. This can be used to remove images where the landmark or the segmentation is not accurate enough. 
+	The inaccuracy measure means that higher values are less accurate an is computed with the loss function proposed in:
+	@inproceedings{ICMV2019FuhlW,
+		author = {Fuhl, W. and Kasneci, E.},
+		title = {Learning to validate the quality of detected landmarks},
+		booktitle = {International Conference on Machine Vision, ICMV},
+		year = {2019},
+		month = {11}
+	}
+	
+Why the validity and why providing annotations with inaccuracy value:
+	This allows us to also provide pupils during a blink for example which can be interesting for future research
+	This allows to simulate a noisy signal for eye movement detection
+	To remove the pupils during a blink for example you can use a threshold of <=2.5 or the eye movments (Fixation, Saccade, SM) as validity signal.
+
+
+
+
+- gaze_vec: Normalized gaze vector
+- eye_ball: X,Y,Radius (Z is always 0 since it is the origin of our 3D positions)
+
+Computation of the eye ball and gaze vector is based on:
+@inproceedings{NNETRA2020,
+	author = {Fuhl, W. and Gao, H. and Kasneci, E.},
+	title = {Neural networks for optical vector and eye ball parameter estimation},
+	booktitle = {ACM Symposium on Eye Tracking Research \& Applications, ETRA 2020},
+	year = {2020},
+	month = {01},
+	publisher = {ACM}
+}
+
+- lid_seg_2D.mp4: Segmentation in white, background in black.
+- iris_seg_2D.mp4: Segmentation in white, background in black.
+- pupil_seg_2D.mp4: Segmentation in white, background in black.
+
+- lid_seg_3D.mp4: Segmentation in the red channel. Depth information in the blue and green channel ((Z/eye_ball_radius)*(255+255)). Blue channel is filled first and afterwards the green channel. On the surface of the sphere.
+- iris_seg_3D.mp4: Segmentation in the red channel. Depth information in the blue and green channel ((Z/eye_ball_radius)*(255+255)). Blue channel is filled first and afterwards the green channel. On the surface of the sphere.
+- pupil_seg_3D.mp4: Segmentation in the red channel. Depth information in the blue and green channel ((Z/eye_ball_radius)*(255+255)). Blue channel is filled first and afterwards the green channel. On the surface of the sphere.
+
+- iris_seg_3Dplane.mp4: Segmentation in the red channel. Depth information in the blue and green channel ((Z/eye_ball_radius)*(255+255)). Blue channel is filled first and afterwards the green channel. As a disk in the iris plane intersecting the sphere.
+- pupil_seg_3Dplane.mp4: Segmentation in the red channel. Depth information in the blue and green channel ((Z/eye_ball_radius)*(255+255)). Blue channel is filled first and afterwards the green channel. As a disk in the iris plane intersecting the sphere.
+
+
+- lid_lm_2D.txt: Average accuracy and X,Y positions of the landmarks.
+- iris_lm_2D.txt: Average accuracy and X,Y positions of the landmarks
+- pupil_lm_2D.txt: Average accuracy and X,Y positions of the landmarks
+
+- lid_lm_3D.txt: Average accuracy and X,Y,Z positions of the landmarks. Z is ciomputed based on the eyeball.
+- iris_lm_3D.txt: Average accuracy and X,Y,Z positions of the landmarks. Z is ciomputed based on the eyeball.
+- pupil_lm_3D.txt: Average accuracy and X,Y,Z positions of the landmarks. Z is ciomputed based on the eyeball.
+
+- iris_eli.txt: OpenCV Rotatedrect parameters.
+- pupil_eli.txt: OpenCV Rotatedrect parameters.
+
+- pupil_in_iris_eli.txt: Shape and position adapted to the iris ellipse (OpenCV Rotatedrect parameters).
+
+
+
+Challenge:
+The challenge will be available if the paper is accepted somewhere and the hardware has arrived.
+
+
+
+
+
+
+
+
+
+
+
