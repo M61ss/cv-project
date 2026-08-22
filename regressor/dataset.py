@@ -58,6 +58,7 @@ for pupil_activity in pupil_activities:
     pupil_dataset = pd.concat([pupil_dataset, summary], ignore_index=True)
 
 pupil_dataset = pupil_dataset.merge(annotation_df[['subject_id', 'task_number', 'mental', 'physical', 'temporal', 'performance', 'effort', 'frustration', 'mean']], on=['subject_id', 'task_number'])
+pupil_dataset['gender'] = (pupil_dataset['gender'] == 'F').astype(int)
 
 pupil_dataset = pupil_dataset.drop(columns=['subject_id', 'task_number', 'mental', 'physical', 'temporal', 'performance', 'effort', 'frustration'])
 X, y = pupil_dataset.drop(columns=['mean']), pupil_dataset['mean']
