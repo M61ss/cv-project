@@ -44,5 +44,9 @@ for video_path in video_paths:
     p.start()
     processes.append(p)
 
+success_number = 0
 for p in processes:
     p.join()
+    success_number += p.exitcode
+
+print(f'Successfully decomposed {success_number} videos on {len(video_paths)}')
