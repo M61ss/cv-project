@@ -39,7 +39,7 @@ parameters = {
     'weights' : ['uniform', 'distance']
 }
 
-gscv = GridSearchCV(KNeighborsRegressor(n_jobs=-1), parameters, cv=10, n_jobs=-1)
+gscv = GridSearchCV(KNeighborsRegressor(n_jobs=-1), parameters, cv=5, n_jobs=-1)
 
 print('Starting training...')
 gscv.fit(X_train, y_train)

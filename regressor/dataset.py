@@ -38,21 +38,21 @@ for subj in range(1, 48):
         for eye in range(2):
             pupil_activities.append(pupil_df_reduced[(pupil_df_reduced.subject_id == subj) & (pupil_df_reduced.task_number == task) & (pupil_df_reduced.eye_id == eye)].reset_index(drop=True))
 
-dataset_features = ['Subject_id', 'Visual_acuity', 'Gender', 'Age', 'Task_number', 'Time', 'Eye_id', 'Confidence', 'Diameter_avg', 'Diameter_std']
+dataset_features = ['subject_id', 'visual_acuity', 'gender', 'age', 'task_number', 'time', 'eye_id', 'confidence', 'diameter_avg', 'diameter_std']
 pupil_dataset = pd.DataFrame(columns=dataset_features)
 
 for pupil_activity in pupil_activities:
     summary = pd.DataFrame({
-        'Subject_id' : [pupil_activity.iloc[0]['subject_id']],
-        'Visual_acuity' : [pupil_activity.iloc[0]['VisualAcuity_logMAR_']],
-        'Gender' : [pupil_activity.iloc[0]['Gender']],
-        'Age' : [pupil_activity.iloc[0]['Age']],
-        'Task_number' : [pupil_activity.iloc[0]['task_number']],
-        'Time' : [pupil_activity['pupil_timestamp'].max() - pupil_activity['pupil_timestamp'].min()],
-        'Eye_id' : [pupil_activity.iloc[0]['eye_id']],
-        'Confidence' : [pupil_activity['confidence'].mean()],
-        'Diameter_avg' : [pupil_activity['diameter'].mean()],
-        'Diameter_std' : [pupil_activity['diameter'].std()]
+        'subject_id' : [pupil_activity.iloc[0]['subject_id']],
+        'visual_acuity' : [pupil_activity.iloc[0]['VisualAcuity_logMAR_']],
+        'gender' : [pupil_activity.iloc[0]['Gender']],
+        'age' : [pupil_activity.iloc[0]['Age']],
+        'task_number' : [pupil_activity.iloc[0]['task_number']],
+        'time' : [pupil_activity['pupil_timestamp'].max() - pupil_activity['pupil_timestamp'].min()],
+        'eye_id' : [pupil_activity.iloc[0]['eye_id']],
+        'confidence' : [pupil_activity['confidence'].mean()],
+        'diameter_avg' : [pupil_activity['diameter'].mean()],
+        'diameter_std' : [pupil_activity['diameter'].std()]
     })
 
     pupil_dataset = pd.concat([pupil_dataset, summary], ignore_index=True)
