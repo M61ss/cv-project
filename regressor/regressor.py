@@ -10,7 +10,7 @@ from sklearn.neighbors import KNeighborsRegressor
 
 import joblib
 
-from dataset import X, y
+from dataset import X_train, X_test, y_train, y_test
 
 
 transformer = ColumnTransformer(
@@ -32,7 +32,7 @@ pipeline = Pipeline(
     ]
 )
 
-pipeline.fit(X, y)
+pipeline.fit(X_train, y_train)
 
 joblib.dump(
     pipeline, 
