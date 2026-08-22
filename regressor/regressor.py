@@ -27,6 +27,7 @@ def evaluate_regressor(model, x_test, y_test, binary=True):
     print(f"R2:     {r2:.4f}")
     print("")
     print("Remember: R2 score is in [-inf, 1]. R2<0 --> BAD MODEL.")
+    print("")
 
     return y_pred
 
@@ -50,3 +51,4 @@ joblib.dump(
     gscv, 
     os.path.join(os.path.dirname(__file__), 'weights/cload.pkl')
 )
+print('Model saved!')
