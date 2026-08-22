@@ -21,10 +21,10 @@ def evaluate_regressor(model, x_test, y_test, binary=True):
     r2 = r2_score(y_test, y_pred)
 
     print("")
-    print(f"MAE:    {mae}")
-    print(f"MSE:    {mse}")
-    print(f"MSLE:   {msle}")
-    print(f"R2:     {r2}")
+    print(f"MAE:    {mae:.4f}")
+    print(f"MSE:    {mse:.4f}")
+    print(f"MSLE:   {msle:.4f}")
+    print(f"R2:     {r2:.4f}")
     print("")
     print("Remember: R2 score is in [-inf, 1]. R2<0 --> BAD MODEL.")
 
