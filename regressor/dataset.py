@@ -7,7 +7,11 @@ from sklearn.model_selection import train_test_split
 
 colet_path = '/work/cvcs2026/LZMM/COLET/dumped/'
 
+print('Loading dataset from disk...')
 pupil_df = pd.read_csv(os.path.join(colet_path, 'pupil_dataset.csv'), sep=',')
+print('Dataset loaded!')
+
+print('Preparing dataset...')
 
 pupil_drop = ['Education', 'world_index', 'norm_pos_x', 'norm_pos_y', 'method', 'ellipse_center_x', 'ellipse_center_y', 'ellipse_axis_a', 'ellipse_axis_b', 'ellipse_angle', 'diameter_3d', 'model_confidence', 'model_id', 'sphere_center_x', 'sphere_center_y', 'sphere_center_z', 'sphere_radius', 'circle_3d_center_x', 'circle_3d_center_y', 'circle_3d_center_z', 'circle_3d_normal_x', 'circle_3d_normal_y', 'circle_3d_normal_z', 'circle_3d_radius', 'theta', 'phi', 'projected_sphere_center_x', 'projected_sphere_center_y', 'projected_sphere_axis_a', 'projected_sphere_axis_b', 'projected_sphere_angle']
 pupil_df_reduced = pupil_df.drop(columns=pupil_drop)
@@ -58,3 +62,5 @@ pupil_dataset = pupil_dataset.merge(annotation_df[['subject_id', 'task_number', 
 pupil_dataset = pupil_dataset.drop(columns=['subject_id', 'task_number', 'mental', 'physical', 'temporal', 'performance', 'effort', 'frustration'])
 X, y = pupil_dataset.drop(columns=['mean']), pupil_dataset['mean']
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, train_size=0.8, random_state=42)
+
+print('Dataset ready!')
