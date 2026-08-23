@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from multiprocessing import Pool, cpu_count
+from multiprocessing import Process
 import subprocess
 
 
@@ -34,24 +34,23 @@ def decompose(video_path):
     ]
 
     result = subprocess.run(cmd, check=True, stderr=subprocess.PIPE)
-    ok = result.returncode == 0
-    err_msg = result.stderr.decode(errors='ignore') if not ok else ''
-    return video_name, ok, err_msg
-
+    if result.returncode == 0:
+        print(f'{video_name} decomposed!')
+    else: 
+        print(result.stderr.decode(errors='ignore')) 
+        
 
 if __name__ == '__main__':
-    n_workers = min(cpu_count(), len(video_paths)) or 1
+    processes = []
 
-    with Pool(processes=n_workers) as pool:
-        results = pool.map(decompose, video_paths)
+    for video_path in video_paths:
+        p = Process(target=decompose, args=[video_path])
+        p.start()
+        processes.append(p)
 
     success_number = 0
-    for video_name, ok, err_msg in results:
-        if ok:
-            success_number += 1
-            print(f'{video_name} decomposed!')
-        else:
-            print(f'FAILED: {video_name}')
-            print(err_msg)
+    for p in processes:
+        p.join()
+        success_number += 1 if p.exitcode == 0 else 0
 
     print(f'Successfully decomposed {success_number} on {len(video_paths)}')
