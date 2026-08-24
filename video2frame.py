@@ -1,56 +1,57 @@
 import os
 from pathlib import Path
-from multiprocessing import Process
-import subprocess
+from sys import stderr
+import traceback
+
+import torch
+from torchcodec.decoders import VideoDecoder
+from torchvision.io import write_jpeg
 
 
-data_dir = '/work/cvcs2026/LZMM/TEyeD/Dikablis/ANNOTATIONS/'
+data_dir = '/work/cvcs2026/LZMM/TEyeD/Dikablis/VIDEOS'
 
-threads = '1'
-fps = 25
-scale = '384x288'
-format = 'yuvj420p'
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
+print('Device:', device)
 
-video_paths = list(Path(data_dir).glob('*pupil_seg_2D.mp4'))
+video_paths = list(Path(data_dir).glob('*'))
 
 def decompose(video_path):
     video_name = video_path.stem
-    frame_folder_path = video_path.with_suffix('')
-    frame_folder_path.mkdir(exist_ok=True)
+    try:
+        frames_folder_path = video_path.with_suffix('')
+        frames_folder_path.mkdir(exist_ok=True)
 
-    print(f'Decomposing video {video_name}:')
-    print('')
-    print(f'- src path: {str(video_path)}')
-    print(f'- dst path: {frame_folder_path}')
-    print('')
+        print(f'Decomposing video {video_name}:')
+        print('')
+        print(f'- src path: {str(video_path)}')
+        print(f'- dst path: {frames_folder_path}')
+        print('')
 
-    cmd = [
-        'ffmpeg',
-        '-y', '-threads', threads,
-        '-i', str(video_path),
-        '-vf', f'fps={fps},scale={scale},format={format}',
-        '-q:v', '2',
-        os.path.join(frame_folder_path, 'frame_%05d.jpg')
-    ]
+        decoder = VideoDecoder(video_path, device=device)
 
-    result = subprocess.run(cmd, check=True, stderr=subprocess.PIPE)
-    if result.returncode == 0:
+        for i, frame in enumerate(decoder[::5]):
+            write_jpeg(frame, os.path.join(frames_folder_path, f'frame_{i:06d}.jpg'), quality=85)
+
         print(f'{video_name} decomposed!')
-    else: 
-        print(result.stderr.decode(errors='ignore')) 
+
+        return True
+    except Exception:
+        print(f'ERROR decomposing {video_name}.')
+        print(f'{video_name}:', file=stderr)
+        traceback.print_exc(file=stderr)
+
+        return False
         
 
 if __name__ == '__main__':
-    processes = []
+    not_decomposed = []
+    success_count = 0
 
     for video_path in video_paths:
-        p = Process(target=decompose, args=[video_path])
-        p.start()
-        processes.append(p)
+        if decompose(video_path) == True:
+            success_count += 1
+        else:
+            not_decomposed.append(str(video_path.stem))
 
-    success_number = 0
-    for p in processes:
-        p.join()
-        success_number += 1 if p.exitcode == 0 else 0
-
-    print(f'Successfully decomposed {success_number} on {len(video_paths)}')
+    print(f'Successfully decomposed {success_count} videos on {len(video_paths)}!')
+    print(f'Not decomposed videos:', not_decomposed)
