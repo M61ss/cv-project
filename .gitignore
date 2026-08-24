@@ -192,3 +192,4 @@ plot.png
 best*.pth
 last*.pth
 weights/
+tmp.ipynb
