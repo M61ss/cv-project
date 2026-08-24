@@ -48,7 +48,7 @@ evaluate_regressor(gscv, X_test, y_test, binary=False)
 
 print('Saving model...')
 joblib.dump(
-    gscv, 
+    gscv.best_estimator_, 
     os.path.join(os.path.dirname(__file__), 'weights/cload.pkl')
 )
 print('Model saved!')
