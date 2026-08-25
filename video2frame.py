@@ -30,7 +30,7 @@ def decompose(video_path):
         decoder = VideoDecoder(video_path, device=device)
 
         for i, frame in enumerate(decoder[::5]):
-            write_jpeg(frame, os.path.join(frames_folder_path, f'frame_{i:06d}.jpg'), quality=85)
+            write_jpeg(frame.cpu(), os.path.join(frames_folder_path, f'frame_{i:06d}.jpg'), quality=85)
 
         print(f'{video_name} decomposed!')
 
