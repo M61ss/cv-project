@@ -8,12 +8,12 @@ from torchcodec.decoders import VideoDecoder
 from torchvision.io import write_jpeg
 
 
-data_dir = '/work/cvcs2026/LZMM/TEyeD/Dikablis/VIDEOS'
+data_dir = '/work/cvcs2026/LZMM/IREye4Task'
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 print('Device:', device)
 
-video_paths = list(Path(data_dir).glob('*'))
+video_paths = list(Path(data_dir).glob('*.mp4'))
 
 def decompose(video_path):
     video_name = video_path.stem
@@ -29,7 +29,7 @@ def decompose(video_path):
 
         decoder = VideoDecoder(video_path, device=device)
 
-        for i, frame in enumerate(decoder[::5]):
+        for i, frame in enumerate(decoder):
             write_jpeg(frame.cpu(), os.path.join(frames_folder_path, f'frame_{i:06d}.jpg'), quality=85)
 
         print(f'{video_name} decomposed!')
