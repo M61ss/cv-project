@@ -47,6 +47,7 @@ class IREye4TaskVideoDataset(Dataset):
         'cogL': 0, 'perL': 0, 'phyL': 0, 'comL': 0,
         'cogH': 1, 'perH': 1, 'phyH': 1, 'comH': 1,
     }
+    pupil_indices = [20, 21, 22, 23, 24, 25, 26, 27]
     frame_rate = 60.0
     frame_name_pattern = re.compile(r"frame_(\d+)\.jpg$")
 
@@ -155,12 +156,21 @@ class IREye4TaskVideoDataset(Dataset):
                     f"(frame count: {frame_count})"
                 )
 
+            landmarks = pd.read_csv(
+                annotation_path,
+                sep=r'\s+',
+                skiprows=1,
+                header=None
+            ).drop(columns=[0, 1]).values.tolist()
+
             current_segment = []
+            current_diameters = []
             current_key = None
             current_label = None
-            for frame_idx, row in zip(
+            for frame_idx, row, landmarks_row in zip(
                 frame_indices,
                 task_df.itertuples(index=False, name=None),
+                landmarks
             ):
                 task_block = str(row[0]).strip()
                 action = str(row[1]).strip()
@@ -171,14 +181,23 @@ class IREye4TaskVideoDataset(Dataset):
 
                 segment_key = (task_block, action)
                 is_contiguous = not current_segment or frame_idx == current_segment[-1] + 1
+
+                landmarks_row = np.array(landmarks_row, dtype=np.int32)
+                xs = landmarks_row[:28]
+                ys = landmarks_row[28:]
+                pupil_pts = np.stack([xs, ys], axis=1)[self.pupil_indices]
+                _, (ma, MA), _ = cv2.fitEllipse(pupil_pts)
+                diameter = np.sqrt(MA * ma)
+
                 if (
                     label is None
                     or not is_task_action
                     or not is_contiguous
                     or segment_key != current_key
                 ):
-                    self._extract_clips_from_segment(frame_dir, current_segment, current_label)
+                    self._extract_clips_from_segment(frame_dir, current_segment, current_label, current_diameters)
                     current_segment = []
+                    current_diameters = []
                     current_key = None
                     current_label = None
 
@@ -187,10 +206,11 @@ class IREye4TaskVideoDataset(Dataset):
                         current_key = segment_key
                         current_label = label
                     current_segment.append(int(frame_idx))
+                    current_diameters.append(diameter)
 
-            self._extract_clips_from_segment(frame_dir, current_segment, current_label)
+            self._extract_clips_from_segment(frame_dir, current_segment, current_label, current_diameters)
 
-    def _extract_clips_from_segment(self, frame_dir, frame_indices, label):
+    def _extract_clips_from_segment(self, frame_dir, frame_indices, label, diameters):
         if not frame_indices or label is None:
             return
 
@@ -199,13 +219,14 @@ class IREye4TaskVideoDataset(Dataset):
             return
 
         for start_pos in range(0, len(frame_indices) - required_span + 1, self.clip_stride):
-            self.samples.append((frame_dir, frame_indices[start_pos], label))
+            dataset_row = (frame_dir, frame_indices[start_pos], label, diameters)
+            self.samples.append(dataset_row)
 
     def __len__(self):
         return len(self.samples)
 
     def __getitem__(self, idx):
-        frame_dir, start_frame, label = self.samples[idx]
+        frame_dir, start_frame, label, diameters = self.samples[idx]
         frames = []
 
         for offset in range(self.num_frames):
@@ -230,7 +251,7 @@ class IREye4TaskVideoDataset(Dataset):
         else:
             normalize = Normalize(mean=[0.485], std=[0.229])
         video_tensor = normalize(video_tensor).permute(1, 0, 2, 3)
-        return video_tensor, torch.tensor(label, dtype=torch.long)
+        return video_tensor, torch.tensor(label, dtype=torch.long), torch.tensor(diameters, dtype=torch.float32)
 
 
 def get_subject_splits():
