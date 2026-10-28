@@ -8,6 +8,6 @@ class LightLSTM(nn.Module):
         self.fc = nn.Linear(hidden_size, out_size)
 
     def forward(self, x):
-        out, _ = self.lstm(x)
-        out = self.fc(out[:, -1, :])
-        return out
+        out, (h_n, c_n) = self.lstm(x)
+        h_final = self.fc(h_n[-1])
+        return h_final
