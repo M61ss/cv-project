@@ -59,9 +59,9 @@ for epoch in range(num_epochs):
     model.train()
 
     train_loss = 0
-    for i, _, x, y in enumerate(train_dataset):
-        x = x.unsqueeze(-1).unsqueeze(0).to(device)
-        y = y.unsqueeze(0).to(device)
+    for i, train_batch in enumerate(train_dataset):
+        x = train_batch[1].to(device)
+        y = train_batch[2].to(device)
 
         opt.zero_grad()
         y_pred = model(x)
@@ -82,8 +82,7 @@ for epoch in range(num_epochs):
 
         val_loss = 0
         for _, x, y in val_dataset:
-            x = x.unsqueeze(-1).unsqueeze(0).to(device)
-            y = y.unsqueeze(0).to(device)
+            x, y = x.to(device), y.to(device)
 
             y_pred = model(x)
             loss = loss_fn(y_pred, y)
