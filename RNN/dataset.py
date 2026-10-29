@@ -216,8 +216,8 @@ class IREye4TaskVideoDataset(Dataset):
     def __getitem__(self, idx):
         frame_dir, start_frame, label, diameters = self.samples[idx]
         video_tensor = torch.tensor(0)
-        diameters_tensor = torch.tensor(diameters, dtype=torch.float32)
-        label_tensor = torch.tensor([label], dtype=torch.float32)
+        diameters_tensor = torch.tensor(diameters, dtype=torch.float32).unsqueeze(-1).unsqueeze(0)
+        label_tensor = torch.tensor([label], dtype=torch.float32).unsqueeze(0)
 
         if self.load_frames:
             frames = []
