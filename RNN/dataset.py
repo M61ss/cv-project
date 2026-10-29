@@ -48,7 +48,7 @@ class IREye4TaskVideoDataset(Dataset):
         'cogL': 0, 'perL': 0, 'phyL': 0, 'comL': 0,
         'cogH': 1, 'perH': 1, 'phyH': 1, 'comH': 1,
     }
-    pupil_indices = [20, 21, 22, 23, 24, 25, 26, 27]
+    pupil_indices = list(range(20,28))
     frame_rate = 60.0
     frame_name_pattern = re.compile(r"frame_(\d+)\.jpg$")
 
