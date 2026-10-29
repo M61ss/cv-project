@@ -139,18 +139,12 @@ class IREye4TaskVideoDataset(Dataset):
                 raise ValueError(f"Non-finite frame timestamp in {annotation_path}")
 
             frame_indices = np.rint(timestamps * frame_rate).astype(np.int64)
-            if (
-                (frame_indices < 0).any()
-                or (np.abs(timestamps * frame_rate - frame_indices) > 0.1).any()
-            ):
+            if (frame_indices < 0).any() or (np.abs(timestamps * frame_rate - frame_indices) > 0.1).any():
                 raise ValueError(f"Frame timestamps do not map to frame indices in {annotation_path}")
 
             frame_count = self._get_frame_count(frame_dir)
             if (frame_indices >= frame_count).any():
-                raise ValueError(
-                    f"Timestamp references a missing frame in {frame_dir} "
-                    f"(frame count: {frame_count})"
-                )
+                raise ValueError("Timestamp references a missing frame in {frame_dir} (frame count: {frame_count})")
 
             landmarks = pd.read_csv(
                 annotation_path,
