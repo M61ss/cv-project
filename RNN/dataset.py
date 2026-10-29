@@ -66,8 +66,7 @@ class IREye4TaskVideoDataset(Dataset):
         self.dataset_dir = dataset_dir
         self.subject_ids = {str(subject) for subject in subject_ids} if subject_ids is not None else None
         self.num_frames = num_frames
-        self.frame_stride = frame_stride
-        self.clip_stride = clip_stride
+        self.frame_stride, self.clip_stride = frame_stride, clip_stride
         self.target_size = target_size
         self.only_cognitive = only_cognitive
         self.rgb_format = rgb_format
