@@ -262,6 +262,9 @@ def get_subject_splits():
     test_subjects = [17, 18, 19]
     return train_subjects, val_subjects, test_subjects
 
+print('Loading dataset...')
+print('')
+start_time = time.perf_counter()
 
 config = {
     'name': 'IREye4Task',
@@ -290,9 +293,6 @@ train_transforms = v2.Compose([
 val_test_transforms = v2.Compose([
     v2.Resize((224, 224), antialias=True),
 ])
-
-print('Loading dataset...')
-start_time = time.perf_counter()
 
 train_dataset = IREye4TaskVideoDataset(
     dataset_dir=dataset_path,
