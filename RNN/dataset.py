@@ -59,6 +59,7 @@ class IREye4TaskVideoDataset(Dataset):
         frame_stride=1,
         clip_stride=16,
         target_size=(224, 224),
+        load_frames=True,
         only_cognitive=False,
         rgb_format=False,
         transform=None,
@@ -68,6 +69,7 @@ class IREye4TaskVideoDataset(Dataset):
         self.num_frames = num_frames
         self.frame_stride, self.clip_stride = frame_stride, clip_stride
         self.target_size = target_size
+        self.load_frames = load_frames
         self.only_cognitive = only_cognitive
         self.rgb_format = rgb_format
         self.transform = transform
@@ -213,26 +215,30 @@ class IREye4TaskVideoDataset(Dataset):
 
     def __getitem__(self, idx):
         frame_dir, start_frame, label, diameters = self.samples[idx]
-        frames = []
+        video_tensor = torch.tensor(0)
 
-        for offset in range(self.num_frames):
-            frame_idx = start_frame + offset * self.frame_stride
-            frame_path = frame_dir / f"frame_{frame_idx:06d}.jpg"
-            gray = cv2.imread(str(frame_path), cv2.IMREAD_GRAYSCALE)
-            if gray is None:
-                raise OSError(f"Could not read frame: {frame_path}")
-            if self.target_size:
-                gray = resize_with_padding(gray, self.target_size)
-            frames.append(gray)
+        if self.load_frames:
+            frames = []
 
-        video_tensor = torch.from_numpy(np.stack(frames)).to(torch.float32).unsqueeze(1) / 255.0
-        if self.rgb_format:
-            video_tensor = video_tensor.repeat(1, 3, 1, 1)
+            for offset in range(self.num_frames):
+                frame_idx = start_frame + offset * self.frame_stride
+                frame_path = frame_dir / f"frame_{frame_idx:06d}.jpg"
+                gray = cv2.imread(str(frame_path), cv2.IMREAD_GRAYSCALE)
+                if gray is None:
+                    raise OSError(f"Could not read frame: {frame_path}")
+                if self.target_size:
+                    gray = resize_with_padding(gray, self.target_size)
+                frames.append(gray)
 
-        if self.transform:
-            video_tensor = self.transform(video_tensor)
+            video_tensor = torch.from_numpy(np.stack(frames)).to(torch.float32).unsqueeze(1) / 255.0
+            if self.rgb_format:
+                video_tensor = video_tensor.repeat(1, 3, 1, 1)
 
-        video_tensor = self.normalize(video_tensor).permute(1, 0, 2, 3)
+            if self.transform:
+                video_tensor = self.transform(video_tensor)
+
+            video_tensor = self.normalize(video_tensor).permute(1, 0, 2, 3)
+
         return video_tensor, torch.tensor(diameters, dtype=torch.float32), torch.tensor([label], dtype=torch.float32)
 
 
@@ -283,6 +289,7 @@ train_dataset = IREye4TaskVideoDataset(
     transform=train_transforms,
     clip_stride=clip_stride,
     rgb_format=True,
+    load_frames=False
 )
 
 val_dataset = IREye4TaskVideoDataset(
@@ -292,6 +299,7 @@ val_dataset = IREye4TaskVideoDataset(
     transform=val_test_transforms,
     clip_stride=clip_stride,
     rgb_format=True,
+    load_frames=False
 )
 
 test_dataset = IREye4TaskVideoDataset(
@@ -301,6 +309,7 @@ test_dataset = IREye4TaskVideoDataset(
     transform=val_test_transforms,
     clip_stride=clip_stride,
     rgb_format=True,
+    load_frames=False
 )
 
 end_time = time.perf_counter()
