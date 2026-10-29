@@ -132,8 +132,7 @@ class IREye4TaskVideoDataset(Dataset):
             ).iloc[:, 0].to_numpy(dtype=np.float64)
             if len(timestamps) != len(task_df):
                 raise ValueError(
-                    f"Task rows ({len(task_df)}) do not match timestamp rows "
-                    f"({len(timestamps)}) for subject {subject_id}"
+                    f"Task rows ({len(task_df)}) do not match timestamp rows ({len(timestamps)}) for subject {subject_id}"
                 )
             if not np.isfinite(timestamps).all():
                 raise ValueError(f"Non-finite frame timestamp in {annotation_path}")
@@ -144,7 +143,7 @@ class IREye4TaskVideoDataset(Dataset):
 
             frame_count = self._get_frame_count(frame_dir)
             if (frame_indices >= frame_count).any():
-                raise ValueError("Timestamp references a missing frame in {frame_dir} (frame count: {frame_count})")
+                raise ValueError(f"Timestamp references a missing frame in {frame_dir} (frame count: {frame_count})")
 
             landmarks = pd.read_csv(
                 annotation_path,
