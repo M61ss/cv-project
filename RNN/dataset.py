@@ -273,7 +273,8 @@ config = {
     'num_frames': 32,
     'clip_stride': 32
 }
-[print(f"{key}: {value}") for key, value in config.items()]
+for k, v in config.items():
+    print(f"{k}: {v}")
 
 dataset_path = config['path']
 num_frames = config['num_frames']
