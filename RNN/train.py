@@ -44,7 +44,7 @@ model = LightLSTM(
 num_epochs = config['num_epoches']
 lr = config['learning_rate']
 
-loss_fn = nn.CrossEntropyLoss().to(device)
+loss_fn = nn.BCEWithLogitsLoss().to(device)
 opt = Adam(model.parameters(), lr=lr)
 
 for epoch in range(num_epochs):
@@ -55,11 +55,10 @@ for epoch in range(num_epochs):
 
     train_loss = 0
     for _, x, y in train_dataset:
-        x = x.unsqueeze(1)
+        x = x.unsqueeze(-1).unsqueeze(0).to(device)
+        y = y.unsqueeze(0).to(device)
 
         opt.zero_grad()
-
-        x, y = x.to(device), y.to(device)
         y_pred = model(x)
         loss = loss_fn(y_pred, y)
         loss.backward()
