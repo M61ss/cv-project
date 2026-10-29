@@ -8,7 +8,7 @@ from torch.optim import Adam
 import wandb
 
 from lstm import LightLSTM
-from dataset import train_dataset, val_dataset
+from dataset import train_dataset, val_dataset, ds_config
 from earlystopper import EarlyStopping
 
 
@@ -26,7 +26,7 @@ config = {
     'learning_rate': 1e-3,
     "num_epoches": 20
 }
-run = wandb.init(project=wandb_project_name, config=config)
+run = wandb.init(project=wandb_project_name, config=(config | ds_config))
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
