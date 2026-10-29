@@ -255,20 +255,18 @@ print('Loading dataset...')
 print('')
 start_time = time.perf_counter()
 
-config = {
-    'name': 'IREye4Task',
-    'path': "/work/cvcs2026/LZMM/IREye4Task",
-    'num_frames': 32,
-    'frame_stride': 4,
-    'clip_stride': 128
+ds_config = {
+    'num_frames': 48,
+    'frame_stride': 15,
+    'clip_stride': 720
 }
-for k, v in config.items():
+for k, v in ds_config.items():
     print(f"{k}: {v}")
 
-dataset_path = config['path']
-num_frames = config['num_frames']
-frame_stride = config['frame_stride']
-clip_stride = config['clip_stride']
+dataset_path = "/work/cvcs2026/LZMM/IREye4Task"
+num_frames = ds_config['num_frames']
+frame_stride = ds_config['frame_stride']
+clip_stride = ds_config['clip_stride']
 train_subs, val_subs, test_subs = get_subject_splits()
 
 train_transforms = v2.Compose([
