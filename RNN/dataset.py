@@ -220,7 +220,8 @@ class IREye4TaskVideoDataset(Dataset):
             return
 
         for start_pos in range(0, len(frame_indices) - required_span + 1, self.clip_stride):
-            dataset_row = (frame_dir, frame_indices[start_pos], label, diameters)
+            clip_diameters = diameters[start_pos:start_pos + required_span:self.frame_stride]
+            dataset_row = (frame_dir, frame_indices[start_pos], label, clip_diameters)
             self.samples.append(dataset_row)
 
     def __len__(self):
