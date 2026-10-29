@@ -1,5 +1,6 @@
 import os
 import re
+import time
 
 import cv2
 import numpy as np
@@ -291,6 +292,7 @@ val_test_transforms = v2.Compose([
 ])
 
 print('Loading dataset...')
+start_time = time.perf_counter()
 
 train_dataset = IREye4TaskVideoDataset(
     dataset_dir=dataset_path,
@@ -319,4 +321,7 @@ test_dataset = IREye4TaskVideoDataset(
     rgb_format=True,
 )
 
+end_time = time.perf_counter()
 print('Dataset loaded!')
+print(f'Elapsed time: {end_time - start_time:.3f} s')
+print('')
