@@ -13,10 +13,10 @@ from torchvision.transforms import Normalize, v2
 def resize_with_padding(image, target_size):
     """Resize an image to the target shape without changing its aspect ratio."""
     target_h, target_w = target_size
-    height, width = image.shape[:2]
-    scale = min(target_w / width, target_h / height)
-    resized_w = round(width * scale)
-    resized_h = round(height * scale)
+    h, w = image.shape[:2]
+    scale = min(target_w / w, target_h / h)
+    resized_w = round(w * scale)
+    resized_h = round(h * scale)
     interpolation = cv2.INTER_AREA if scale < 1 else cv2.INTER_LINEAR
     image = cv2.resize(image, (resized_w, resized_h), interpolation=interpolation)
 
