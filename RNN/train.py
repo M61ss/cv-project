@@ -53,9 +53,10 @@ for epoch in range(num_epochs):
 
     model.train()
 
+    train_loss = 0
     for _, x, y in train_dataset:
         x = x.unsqueeze(1)
-        
+
         opt.zero_grad()
 
         x, y = x.to(device), y.to(device)
@@ -64,3 +65,5 @@ for epoch in range(num_epochs):
         loss.backward()
 
         opt.step()
+
+        train_loss += loss.item()
