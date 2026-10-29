@@ -1,6 +1,6 @@
-import os
 import re
 import time
+from pathlib import Path
 
 import cv2
 import numpy as np
@@ -63,7 +63,7 @@ class IREye4TaskVideoDataset(Dataset):
         rgb_format=False,
         transform=None,
     ):
-        self.dataset_dir = dataset_dir
+        self.dataset_dir = Path(dataset_dir)
         self.subject_ids = {str(subject) for subject in subject_ids} if subject_ids is not None else None
         self.num_frames = num_frames
         self.frame_stride, self.clip_stride = frame_stride, clip_stride
@@ -75,23 +75,23 @@ class IREye4TaskVideoDataset(Dataset):
 
         if self.num_frames <= 0 or self.frame_stride <= 0 or self.clip_stride <= 0:
             raise ValueError("num_frames, frame_stride, and clip_stride must be positive")
-        if not os.path.isdir(self.dataset_dir):
+        if not self.dataset_dir.is_dir():
             raise FileNotFoundError(f"Dataset directory does not exist: {self.dataset_dir}")
 
         self._index_dataset()
 
     def _get_frame_directory(self, subject_id):
         for eye in ("eye0", "eye1"):
-            frame_dir = os.path.join(self.dataset_dir, f"{eye}_sub{subject_id}")
-            if os.path.isdir(frame_dir):
+            frame_dir = self.dataset_dir / f"{eye}_sub{subject_id}"
+            if frame_dir.is_dir():
                 return frame_dir
         return None
 
     def _get_frame_count(self, frame_dir):
         frame_count = 0
         max_index = -1
-        for filename in os.listdir(frame_dir):
-            match = frame_name_pattern.fullmatch(filename)
+        for frame_path in frame_dir.iterdir():
+            match = frame_name_pattern.fullmatch(frame_path.name)
             if match:
                 frame_count += 1
                 max_index = max(max_index, int(match.group(1)))
@@ -103,22 +103,18 @@ class IREye4TaskVideoDataset(Dataset):
         return frame_count
 
     def _index_dataset(self):
-        for filename in sorted(os.listdir(self.dataset_dir)):
-            if not filename.startswith("tasks_sub") or not filename.endswith(".csv"):
-                continue
-
-            subject_id = filename.removeprefix("tasks_sub").removesuffix(".csv")
+        for csv_path in sorted(self.dataset_dir.glob("tasks_sub*.csv")):
+            subject_id = csv_path.stem.removeprefix("tasks_sub")
             if self.subject_ids is not None and subject_id not in self.subject_ids:
                 continue
 
-            csv_path = os.path.join(self.dataset_dir, filename)
             frame_dir = self._get_frame_directory(subject_id)
             if frame_dir is None:
                 continue
 
-            eye_name = os.path.basename(frame_dir).split("_")[0]
-            annotation_path = os.path.join(self.dataset_dir, f"{eye_name}_sub{subject_id}.txt")
-            if not os.path.isfile(annotation_path):
+            eye_name = frame_dir.name.split("_")[0]
+            annotation_path = self.dataset_dir / f"{eye_name}_sub{subject_id}.txt"
+            if not annotation_path.is_file():
                 raise FileNotFoundError(f"Missing frame timestamps: {annotation_path}")
 
             task_df = pd.read_csv(csv_path)
@@ -227,8 +223,8 @@ class IREye4TaskVideoDataset(Dataset):
 
         for offset in range(self.num_frames):
             frame_idx = start_frame + offset * self.frame_stride
-            frame_path = os.path.join(frame_dir, f"frame_{frame_idx:06d}.jpg")
-            gray = cv2.imread(frame_path, cv2.IMREAD_GRAYSCALE)
+            frame_path = frame_dir / f"frame_{frame_idx:06d}.jpg"
+            gray = cv2.imread(str(frame_path), cv2.IMREAD_GRAYSCALE)
             if gray is None:
                 raise OSError(f"Could not read frame: {frame_path}")
             if self.target_size:
