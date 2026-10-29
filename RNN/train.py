@@ -1,22 +1,48 @@
+import logging
+import sys
+import os
+
 import torch
 import torch.nn as nn
 from torch.optim import Adam
+import wandb
 
 from lstm import LightLSTM
 from dataset import train_dataset
 
 
-device = 'cuda' if torch.cuda.is_available() else 'cpu'
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+wandb.login()
+wandb_project_name = "RNN Head"
+config = {
+    "dataset": "IREye4Task",
+    'architecture': 'LSTM',
+    'input_dim': 1,
+    'output_dim': 1,
+    'hidden_dim': 32,
+    'num_layers': 1,
+    'learning_rate': 1e-3,
+    "num_epoches": 20
+}
+run = wandb.init(project=wandb_project_name, config=config)
+
+logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+
+checkpoint_dir = os.path.join(os.path.dirname(__file__), 'checkpoints')
+os.makedirs(checkpoint_dir, exist_ok=True)
+
 print('Device:', device)
 
 model = LightLSTM(
-    input_size=1, 
-    hidden_size=32, 
-    num_layers=1
+    input_size=config['input_dim'],
+    out_size=config['output_dim'], 
+    hidden_size=config['hidden_dim'], 
+    num_layers=config['num_layers']
 )
 
-num_epochs = 20
-lr = 0.001
+num_epochs = config['num_epoches']
+lr = config['learning_rate']
 
 loss_fn = nn.CrossEntropyLoss()
 opt = Adam(model.parameters(), lr=lr)
