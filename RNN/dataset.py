@@ -216,6 +216,8 @@ class IREye4TaskVideoDataset(Dataset):
     def __getitem__(self, idx):
         frame_dir, start_frame, label, diameters = self.samples[idx]
         video_tensor = torch.tensor(0)
+        diameters_tensor = torch.tensor(diameters, dtype=torch.float32)
+        label_tensor = torch.tensor([label], dtype=torch.float32)
 
         if self.load_frames:
             frames = []
@@ -239,7 +241,7 @@ class IREye4TaskVideoDataset(Dataset):
 
             video_tensor = self.normalize(video_tensor).permute(1, 0, 2, 3)
 
-        return video_tensor, torch.tensor(diameters, dtype=torch.float32), torch.tensor([label], dtype=torch.float32)
+        return video_tensor, diameters_tensor, label_tensor
 
 
 def get_subject_splits():
