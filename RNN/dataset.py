@@ -71,6 +71,7 @@ class IREye4TaskVideoDataset(Dataset):
         self.only_cognitive = only_cognitive
         self.rgb_format = rgb_format
         self.transform = transform
+        self.normalize = Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]) if self.rgb_format else Normalize(mean=[0.485], std=[0.229])
         self.samples = []
 
         if self.num_frames <= 0 or self.frame_stride <= 0 or self.clip_stride <= 0:
@@ -238,11 +239,7 @@ class IREye4TaskVideoDataset(Dataset):
         if self.transform:
             video_tensor = self.transform(video_tensor)
 
-        if self.rgb_format:
-            normalize = Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-        else:
-            normalize = Normalize(mean=[0.485], std=[0.229])
-        video_tensor = normalize(video_tensor).permute(1, 0, 2, 3)
+        video_tensor = self.normalize(video_tensor).permute(1, 0, 2, 3)
         return video_tensor, torch.tensor(diameters, dtype=torch.float32), torch.tensor(label, dtype=torch.long)
 
 
