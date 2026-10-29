@@ -259,13 +259,15 @@ config = {
     'name': 'IREye4Task',
     'path': "/work/cvcs2026/LZMM/IREye4Task",
     'num_frames': 32,
-    'clip_stride': 32
+    'frame_stride': 4,
+    'clip_stride': 128
 }
 for k, v in config.items():
     print(f"{k}: {v}")
 
 dataset_path = config['path']
 num_frames = config['num_frames']
+frame_stride = config['frame_stride']
 clip_stride = config['clip_stride']
 train_subs, val_subs, test_subs = get_subject_splits()
 
@@ -288,6 +290,7 @@ train_dataset = IREye4TaskVideoDataset(
     dataset_dir=dataset_path,
     subject_ids=train_subs,
     num_frames=num_frames,
+    frame_stride=frame_stride,
     transform=train_transforms,
     clip_stride=clip_stride,
     rgb_format=True,
@@ -298,6 +301,7 @@ val_dataset = IREye4TaskVideoDataset(
     dataset_dir=dataset_path,
     subject_ids=val_subs,
     num_frames=num_frames,
+    frame_stride=frame_stride,
     transform=val_test_transforms,
     clip_stride=clip_stride,
     rgb_format=True,
@@ -308,6 +312,7 @@ test_dataset = IREye4TaskVideoDataset(
     dataset_dir=dataset_path,
     subject_ids=test_subs,
     num_frames=num_frames,
+    frame_stride=frame_stride,
     transform=val_test_transforms,
     clip_stride=clip_stride,
     rgb_format=True,
