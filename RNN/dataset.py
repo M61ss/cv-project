@@ -10,6 +10,21 @@ from torch.utils.data import Dataset
 from torchvision.transforms import Normalize, v2
 
 
+task_actions = {
+    'cogL': {'Task'}, 'cogH': {'Task'},
+    'perL': {'Task'}, 'perH': {'Task'},
+    'phyL': {'Task'}, 'phyH': {'Task'},
+    'comL': {'lisnH', 'spkL'}, 'comH': {'spkH', 'lisnL'},
+}
+load_map = {
+    'cogL': 0, 'perL': 0, 'phyL': 0, 'comL': 0,
+    'cogH': 1, 'perH': 1, 'phyH': 1, 'comH': 1,
+}
+pupil_indices = list(range(20,28))
+frame_rate = 60.0
+frame_name_pattern = re.compile(r"frame_(\d+)\.jpg$")
+
+
 def resize_with_padding(image, target_size):
     """Resize an image to the target shape without changing its aspect ratio."""
     target_h, target_w = target_size
@@ -26,22 +41,15 @@ def resize_with_padding(image, target_size):
     )
 
 
+def pupil_eq_diameter(landmarks):
+    """Geometric mean of the axes of the ellipse fitted on the pupil landmarks."""
+    points = np.stack([landmarks[:28], landmarks[28:]], axis=1)[pupil_indices].astype(np.int32)
+    _, axes, _ = cv2.fitEllipse(points)
+    return np.sqrt(axes[0] * axes[1])
+
+
 class IREye4TaskVideoDataset(Dataset):
     """Load fixed-length labeled clips from extracted IREye4Task eye frames."""
-
-    task_actions = {
-        'cogL': {'Task'}, 'cogH': {'Task'},
-        'perL': {'Task'}, 'perH': {'Task'},
-        'phyL': {'Task'}, 'phyH': {'Task'},
-        'comL': {'lisnH', 'spkL'}, 'comH': {'spkH', 'lisnL'},
-    }
-    load_map = {
-        'cogL': 0, 'perL': 0, 'phyL': 0, 'comL': 0,
-        'cogH': 1, 'perH': 1, 'phyH': 1, 'comH': 1,
-    }
-    pupil_indices = list(range(20,28))
-    frame_rate = 60.0
-    frame_name_pattern = re.compile(r"frame_(\d+)\.jpg$")
 
     def __init__(
         self,
@@ -84,7 +92,7 @@ class IREye4TaskVideoDataset(Dataset):
         frame_count = 0
         max_index = -1
         for filename in os.listdir(frame_dir):
-            match = self.frame_name_pattern.fullmatch(filename)
+            match = frame_name_pattern.fullmatch(filename)
             if match:
                 frame_count += 1
                 max_index = max(max_index, int(match.group(1)))
@@ -134,10 +142,10 @@ class IREye4TaskVideoDataset(Dataset):
             if not np.isfinite(timestamps).all():
                 raise ValueError(f"Non-finite frame timestamp in {annotation_path}")
 
-            frame_indices = np.rint(timestamps * self.frame_rate).astype(np.int64)
+            frame_indices = np.rint(timestamps * frame_rate).astype(np.int64)
             if (
                 (frame_indices < 0).any()
-                or (np.abs(timestamps * self.frame_rate - frame_indices) > 0.1).any()
+                or (np.abs(timestamps * frame_rate - frame_indices) > 0.1).any()
             ):
                 raise ValueError(f"Frame timestamps do not map to frame indices in {annotation_path}")
 
@@ -166,8 +174,8 @@ class IREye4TaskVideoDataset(Dataset):
             ):
                 task_block = str(row[0]).strip()
                 action = str(row[1]).strip()
-                label = self.load_map.get(task_block)
-                is_task_action = action in self.task_actions.get(task_block, set())
+                label = load_map.get(task_block)
+                is_task_action = action in task_actions.get(task_block, set())
                 if self.only_cognitive and not task_block.startswith("cog"):
                     is_task_action = False
 
@@ -177,7 +185,7 @@ class IREye4TaskVideoDataset(Dataset):
                 landmarks_row = np.array(landmarks_row, dtype=np.int32)
                 xs = landmarks_row[:28]
                 ys = landmarks_row[28:]
-                pupil_pts = np.stack([xs, ys], axis=1)[self.pupil_indices]
+                pupil_pts = np.stack([xs, ys], axis=1)[pupil_indices]
                 _, (ma, MA), _ = cv2.fitEllipse(pupil_pts)
                 diameter = np.sqrt(MA * ma)
 
