@@ -39,7 +39,7 @@ model = LightLSTM(
     out_size=config['output_dim'], 
     hidden_size=config['hidden_dim'], 
     num_layers=config['num_layers']
-)
+).to(device)
 
 num_epochs = config['num_epoches']
 lr = config['learning_rate']
@@ -53,6 +53,7 @@ for epoch in range(num_epochs):
     for _, x, y in train_dataset:
         opt.zero_grad()
 
+        x, y = x.to(device), y.to(device)
         y_pred = model(x)
         loss = loss_fn(y_pred, y)
         loss.backward()
