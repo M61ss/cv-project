@@ -8,7 +8,8 @@ from torch.optim import Adam
 import wandb
 
 from lstm import LightLSTM
-from dataset import train_dataset
+from dataset import train_dataset, val_dataset
+from earlystopper import EarlyStopping
 
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -46,6 +47,10 @@ lr = config['learning_rate']
 
 loss_fn = nn.BCEWithLogitsLoss().to(device)
 opt = Adam(model.parameters(), lr=lr)
+early_stop = EarlyStopping(delta=0.001, patience=10, verbose=True)
+
+best_val_loss = float('inf')
+best_val_loss_epoch = -1
 
 for epoch in range(num_epochs):
     print("=" * 20)
@@ -54,7 +59,7 @@ for epoch in range(num_epochs):
     model.train()
 
     train_loss = 0
-    for _, x, y in train_dataset:
+    for i, _, x, y in enumerate(train_dataset):
         x = x.unsqueeze(-1).unsqueeze(0).to(device)
         y = y.unsqueeze(0).to(device)
 
@@ -66,3 +71,39 @@ for epoch in range(num_epochs):
         opt.step()
 
         train_loss += loss.item()
+        print(f"\t{i}/{len(train_dataset)} train_loss: {loss.item():.4f}")
+
+    train_loss /= len(train_dataset)
+    print(f"\tAverage train loss: {train_loss:.4f}")
+    run.log({'train_loss': train_loss})
+
+    with torch.no_grad():
+        model.eval()
+
+        val_loss = 0
+        for _, x, y in val_dataset:
+            x = x.unsqueeze(-1).unsqueeze(0).to(device)
+            y = y.unsqueeze(0).to(device)
+
+            y_pred = model(x)
+            loss = loss_fn(y_pred, y)
+            val_loss += loss.item()
+
+        val_loss /= len(val_dataset)
+        print(f"\tAverage validation loss: {val_loss:.4f}")
+        run.log({'validation_loss': val_loss})
+
+        if val_loss < best_val_loss:
+            best_val_loss = val_loss
+            best_val_loss_epoch = epoch + 1
+        
+        early_stop.check_early_stop(val_loss)
+
+        if early_stop.stop_training:
+            print('#' * 20)
+            print(f"EARLY STOPPING REACHED at epoch {epoch}")
+            print('#' * 20)
+            break
+
+print(f"TRAINING COMPLETED!")
+print(f"best_metric: {best_val_loss:.4f} at epoch: {best_val_loss_epoch}")
