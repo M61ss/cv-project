@@ -262,7 +262,17 @@ def get_subject_splits():
     return train_subjects, val_subjects, test_subjects
 
 
-dataset_path = "/work/cvcs2026/LZMM/IREye4Task"
+config = {
+    'name': 'IREye4Task',
+    'path': "/work/cvcs2026/LZMM/IREye4Task",
+    'num_frames': 32,
+    'clip_stride': 32
+}
+[print(f"{key}: {value}") for key, value in config.items()]
+
+dataset_path = config['path']
+num_frames = config['num_frames']
+clip_stride = config['clip_stride']
 train_subs, val_subs, test_subs = get_subject_splits()
 
 train_transforms = v2.Compose([
@@ -280,29 +290,33 @@ val_test_transforms = v2.Compose([
     v2.Resize((224, 224), antialias=True),
 ])
 
+print('Loading dataset...')
+
 train_dataset = IREye4TaskVideoDataset(
     dataset_dir=dataset_path,
     subject_ids=train_subs,
-    num_frames=16,
+    num_frames=num_frames,
     transform=train_transforms,
-    clip_stride=8,
+    clip_stride=clip_stride,
     rgb_format=True,
 )
 
 val_dataset = IREye4TaskVideoDataset(
     dataset_dir=dataset_path,
     subject_ids=val_subs,
-    num_frames=16,
+    num_frames=num_frames,
     transform=val_test_transforms,
-    clip_stride=16,
+    clip_stride=clip_stride,
     rgb_format=True,
 )
 
 test_dataset = IREye4TaskVideoDataset(
     dataset_dir=dataset_path,
     subject_ids=test_subs,
-    num_frames=16,
+    num_frames=num_frames,
     transform=val_test_transforms,
-    clip_stride=16,
+    clip_stride=clip_stride,
     rgb_format=True,
 )
+
+print('Dataset loaded!')
