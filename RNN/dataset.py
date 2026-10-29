@@ -183,11 +183,7 @@ class IREye4TaskVideoDataset(Dataset):
                 is_contiguous = not current_segment or frame_idx == current_segment[-1] + 1
 
                 landmarks_row = np.array(landmarks_row, dtype=np.int32)
-                xs = landmarks_row[:28]
-                ys = landmarks_row[28:]
-                pupil_pts = np.stack([xs, ys], axis=1)[pupil_indices]
-                _, (ma, MA), _ = cv2.fitEllipse(pupil_pts)
-                diameter = np.sqrt(MA * ma)
+                diameter = pupil_eq_diameter(landmarks_row)
 
                 if (
                     label is None
