@@ -233,7 +233,7 @@ class IREye4TaskVideoDataset(Dataset):
             video_tensor = self.transform(video_tensor)
 
         video_tensor = self.normalize(video_tensor).permute(1, 0, 2, 3)
-        return video_tensor, torch.tensor(diameters, dtype=torch.float32), torch.tensor(label, dtype=torch.long)
+        return video_tensor, torch.tensor(diameters, dtype=torch.float32), torch.tensor(label, dtype=torch.int32)
 
 
 def get_subject_splits():
