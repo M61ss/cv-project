@@ -44,16 +44,18 @@ model = LightLSTM(
 num_epochs = config['num_epoches']
 lr = config['learning_rate']
 
-loss_fn = nn.CrossEntropyLoss()
+loss_fn = nn.CrossEntropyLoss().to(device)
 opt = Adam(model.parameters(), lr=lr)
 
 for epoch in range(num_epochs):
     print("=" * 20)
-    print(f"EPOCH {epoch + 1}/{run.config['epoches']}")
+    print(f"EPOCH {epoch + 1}/{num_epochs}")
 
     model.train()
 
     for _, x, y in train_dataset:
+        x = x.unsqueeze(1)
+        
         opt.zero_grad()
 
         x, y = x.to(device), y.to(device)
