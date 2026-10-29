@@ -15,23 +15,14 @@ def resize_with_padding(image, target_size):
     target_h, target_w = target_size
     h, w = image.shape[:2]
     scale = min(target_w / w, target_h / h)
-    resized_w = round(w * scale)
-    resized_h = round(h * scale)
     interpolation = cv2.INTER_AREA if scale < 1 else cv2.INTER_LINEAR
-    image = cv2.resize(image, (resized_w, resized_h), interpolation=interpolation)
-
-    top = (target_h - resized_h) // 2
-    bottom = target_h - resized_h - top
-    left = (target_w - resized_w) // 2
-    right = target_w - resized_w - left
+    image = cv2.resize(image, (round(w * scale), round(h * scale)), interpolation=interpolation)
+ 
+    pad_h, pad_w = target_h - image.shape[0], target_w - image.shape[1]
+    top, left = pad_h // 2, pad_w // 2
     return cv2.copyMakeBorder(
-        image,
-        top,
-        bottom,
-        left,
-        right,
-        cv2.BORDER_CONSTANT,
-        value=int(image.mean()),
+        image, top, pad_h - top, left, pad_w - left,
+        cv2.BORDER_CONSTANT, value=int(image.mean()),
     )
 
 
