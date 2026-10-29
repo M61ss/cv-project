@@ -48,6 +48,9 @@ loss_fn = nn.CrossEntropyLoss()
 opt = Adam(model.parameters(), lr=lr)
 
 for epoch in range(num_epochs):
+    print("=" * 20)
+    print(f"EPOCH {epoch + 1}/{run.config['epoches']}")
+
     model.train()
 
     for _, x, y in train_dataset:
