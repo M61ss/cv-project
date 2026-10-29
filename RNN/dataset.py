@@ -81,7 +81,7 @@ class IREye4TaskVideoDataset(Dataset):
 
         self._index_dataset()
 
-    def _get_frame_directory(self, subject_id):
+    def _find_frame_directory(self, subject_id):
         for eye in ("eye0", "eye1"):
             frame_dir = self.dataset_dir / f"{eye}_sub{subject_id}"
             if frame_dir.is_dir():
@@ -109,7 +109,7 @@ class IREye4TaskVideoDataset(Dataset):
             if self.subject_ids is not None and subject_id not in self.subject_ids:
                 continue
 
-            frame_dir = self._get_frame_directory(subject_id)
+            frame_dir = self._find_frame_directory(subject_id)
             if frame_dir is None:
                 continue
 
