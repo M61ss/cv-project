@@ -258,7 +258,7 @@ class IREye4TaskVideoDataset(Dataset):
 
 def get_subject_splits():
     """Return subject-level train, validation, and test splits."""
-    train_subjects = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+    train_subjects = list(range(1,13))
     val_subjects = [13, 14, 16]
     test_subjects = [17, 18, 19]
     return train_subjects, val_subjects, test_subjects
