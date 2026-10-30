@@ -49,7 +49,7 @@ lr = config['learning_rate']
 
 loss_fn = nn.BCEWithLogitsLoss().to(device)
 opt = Adam(model.parameters(), lr=lr)
-early_stop = EarlyStopping(delta=0.001, patience=10, verbose=True)
+early_stop = EarlyStopping(delta=0.001, patience=7, verbose=True)
 
 best_val_loss = float('inf')
 best_val_loss_epoch = -1
