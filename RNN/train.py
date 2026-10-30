@@ -122,8 +122,8 @@ with torch.no_grad():
         pred = model(x)
         loss = loss_fn(pred, y)
         test_loss += loss.item()
-        torch.concat([y_pred, torch.round(torch.sigmoid(pred))])
-        torch.concat([y_true, torch.round(torch.sigmoid(y))])
+        torch.concat([y_pred, torch.round(torch.sigmoid(pred.cpu()))])
+        torch.concat([y_true, torch.round(torch.sigmoid(y.cpu()))])
 
     print(f'Accuracy:   {accuracy_score(y_true, y_pred)}')
     print(f'Precision:  {precision_score(y_true, y_pred)}')
