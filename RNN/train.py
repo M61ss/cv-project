@@ -2,13 +2,15 @@ import logging
 import sys
 import os
 
+from sklearn.metrics import accuracy_score, confusion_matrix, f1_score, precision_score, recall_score
+
 import torch
 import torch.nn as nn
 from torch.optim import Adam
 import wandb
 
 from lstm import LightLSTM
-from dataset import train_dataset, val_dataset, ds_config
+from dataset import train_dataset, val_dataset, test_dataset, ds_config
 from earlystopper import EarlyStopping
 
 
@@ -22,7 +24,7 @@ config = {
     'input_dim': 1,
     'output_dim': 1,
     'hidden_dim': 32,
-    'num_layers': 1,
+    'num_layers': 6,
     'learning_rate': 1e-4,
     "num_epoches": 50
 }
@@ -106,3 +108,26 @@ for epoch in range(num_epochs):
 
 print(f"TRAINING COMPLETED!")
 print(f"best_metric: {best_val_loss:.4f} at epoch: {best_val_loss_epoch}")
+
+with torch.no_grad():
+    model.eval()
+
+    y_pred = torch.empty(0)
+    y_true = torch.empty(0)
+    test_loss = 0
+    for _, x, y in test_dataset:
+        x = x.to(device)
+        y = y.to(device)
+
+        pred = model(x)
+        loss = loss_fn(pred, y)
+        test_loss += loss.item()
+        torch.concat([y_pred, torch.round(torch.sigmoid(pred))])
+        torch.concat([y_true, torch.round(torch.sigmoid(y))])
+
+    print(f'Accuracy:   {accuracy_score(y_true, y_pred)}')
+    print(f'Precision:  {precision_score(y_true, y_pred)}')
+    print(f'Recall:     {recall_score(y_true, y_pred)}')
+    print(f'F1:         {f1_score(y_true, y_pred)}')
+    print('Confusion matrix:')
+    print(f'{confusion_matrix(y_true, y_pred)}')
