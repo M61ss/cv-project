@@ -23,7 +23,7 @@ config = {
     'output_dim': 1,
     'hidden_dim': 32,
     'num_layers': 1,
-    'learning_rate': 1e-3,
+    'learning_rate': 1e-4,
     "num_epoches": 50
 }
 run = wandb.init(project=wandb_project_name, config=(config | ds_config))
