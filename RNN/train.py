@@ -24,7 +24,7 @@ config = {
     'input_dim': 1,
     'output_dim': 1,
     'hidden_dim': 32,
-    'num_layers': 6,
+    'num_layers': 10,
     'learning_rate': 1e-4,
     "num_epoches": 50
 }
@@ -122,8 +122,8 @@ with torch.no_grad():
         pred = model(x)
         loss = loss_fn(pred, y)
         test_loss += loss.item()
-        torch.concat([y_pred, torch.round(torch.sigmoid(pred.cpu()))])
-        torch.concat([y_true, torch.round(torch.sigmoid(y.cpu()))])
+        y_pred = torch.concat([y_pred, torch.round(torch.sigmoid(pred.cpu()))])
+        y_true = torch.concat([y_true, torch.round(torch.sigmoid(y.cpu()))])
 
     print(f'Accuracy:   {accuracy_score(y_true, y_pred)}')
     print(f'Precision:  {precision_score(y_true, y_pred)}')
