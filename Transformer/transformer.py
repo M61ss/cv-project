@@ -28,5 +28,5 @@ class TransformerClassifier(nn.Module):
         x = x + self.positional_embedding[:, :SL+1]
 
         x = self.encoder(x)
-        x = self.fc(self.norm(x[:, 0]))
+        return self.fc(self.norm(x[:, 0]))
 
