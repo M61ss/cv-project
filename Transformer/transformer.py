@@ -3,7 +3,7 @@ import torch.nn as nn
 
 
 class TransformerClassifier(nn.Module):
-    def __init__(self, num_classes, d_model=256, nhead=8, num_layers=4, max_len=512):
+    def __init__(self, num_classes, d_model=256, nhead=8, num_layers=4, max_len=256):
         super().__init__()
         self.positional_embedding = nn.Parameter(torch.zeros(1, max_len + 1, d_model))
         self.cls = nn.Parameter(torch.zeros(1, 1, d_model))
