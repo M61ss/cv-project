@@ -24,8 +24,8 @@ config = {
     'd_model': 1,
     'num_classes': 1,
     'n_head': 1,
-    'num_layers': 2,
-    'learning_rate': 1e-3,
+    'num_layers': 1,
+    'learning_rate': 1e-4,
     "num_epoches": 50
 }
 run = wandb.init(project=wandb_project_name, config=(config | ds_config))
@@ -125,6 +125,7 @@ with torch.no_grad():
         y_pred = torch.concat([y_pred, torch.round(torch.sigmoid(pred.cpu()))])
         y_true = torch.concat([y_true, torch.round(torch.sigmoid(y.cpu()))])
 
+    print(f'Average test loss:  {test_loss / len(test_dataset)}')
     print(f'Accuracy:   {accuracy_score(y_true, y_pred)}')
     print(f'Precision:  {precision_score(y_true, y_pred)}')
     print(f'Recall:     {recall_score(y_true, y_pred)}')
