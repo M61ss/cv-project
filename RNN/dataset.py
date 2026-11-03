@@ -256,9 +256,9 @@ print('')
 start_time = time.perf_counter()
 
 ds_config = {
-    'num_frames': 48,
-    'frame_stride': 15,
-    'clip_stride': 720
+    'num_frames': 32,
+    'frame_stride': 5,
+    'clip_stride': 160
 }
 for k, v in ds_config.items():
     print(f"{k}: {v}")
