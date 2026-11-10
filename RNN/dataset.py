@@ -305,7 +305,11 @@ if __name__ == "__main__":
     val_dataset = IREye4Task(subject_ids=val_subs, transform=val_test_transforms, **common)
     test_dataset = IREye4Task(subject_ids=test_subs, transform=val_test_transforms, **common)
 
-    loader_args = dict(batch_size=1, num_workers=4, collate_fn=pad_collate)
+    loader_args = dict(
+        batch_size=1, 
+        num_workers=4, 
+        collate_fn=pad_collate
+    )
     train_dl = DataLoader(train_dataset, shuffle=True, **loader_args)
     val_dl = DataLoader(val_dataset, **loader_args)
     test_dl = DataLoader(test_dataset, **loader_args)
