@@ -144,3 +144,5 @@ with torch.no_grad():
     print('-' * 20)
     print(f'Dice metric: {dice_metric.aggregate(reduction="mean").item():.4f}')
     print('-' * 20)
+
+wandb.finish()
