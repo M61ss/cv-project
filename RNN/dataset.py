@@ -154,46 +154,30 @@ class IREye4TaskVideoDataset(Dataset):
                 header=None
             ).drop(columns=[0, 1]).values.tolist()
 
-            current_segment = []
-            current_diameters = []
-            current_key = None
-            current_label = None
-            for frame_idx, row, landmarks_row in zip(
-                frame_indices,
-                task_df.itertuples(index=False, name=None),
-                landmarks
-            ):
+            current_segment, current_diameters = [], []
+            current_label = current_block = None
+
+            for frame_idx, row, landmarks_row in zip(frame_indices, task_df.itertuples(index=False, name=None), landmarks):
                 task_block = str(row[0]).strip()
                 action = str(row[1]).strip()
                 label = load_map.get(task_block)
-                is_task_action = action in task_actions.get(task_block, set())
+                is_task = label is not None and action in task_actions.get(task_block, set())
                 if self.only_cognitive and not task_block.startswith("cog"):
-                    is_task_action = False
+                    is_task = False
 
-                segment_key = (task_block, action)
-                is_contiguous = not current_segment or frame_idx == current_segment[-1] + 1
-
-                landmarks_row = np.array(landmarks_row, dtype=np.int32)
-                diameter = pupil_eq_diameter(landmarks_row)
-
-                if (
-                    label is None
-                    or not is_task_action
-                    or not is_contiguous
-                    or segment_key != current_key
+                if current_segment and (
+                    not is_task
+                    or task_block != current_block
+                    or frame_idx != current_segment[-1] + 1
                 ):
                     self._extract_clips_from_segment(frame_dir, current_segment, current_label, current_diameters)
-                    current_segment = []
-                    current_diameters = []
-                    current_key = None
-                    current_label = None
+                    current_segment, current_diameters = [], []
 
-                if label is not None and is_task_action:
+                if is_task:
                     if not current_segment:
-                        current_key = segment_key
-                        current_label = label
+                        current_label, current_block = label, task_block
                     current_segment.append(int(frame_idx))
-                    current_diameters.append(diameter)
+                    current_diameters.append(pupil_eq_diameter(landmarks_row))
 
             self._extract_clips_from_segment(frame_dir, current_segment, current_label, current_diameters)
 
