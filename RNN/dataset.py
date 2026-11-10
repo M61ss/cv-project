@@ -277,8 +277,8 @@ if __name__ == "__main__":
     start_time = time.perf_counter()
 
     ds_config = {
-        'frame_stride': 5,
-        'min_frames': 1,
+        'frame_stride': 4,
+        'min_frames': 16,
     }
     for k, v in ds_config.items():
         print(f"{k}: {v}")
