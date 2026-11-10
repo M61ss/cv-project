@@ -1,15 +1,14 @@
-import os
 from math import ceil
 
 import torch
 from torch.optim import Adam
 from monai.networks.nets import UNet
 from monai.losses import DiceLoss
+from monai.metrics import DiceMetric
 
-from .config import run, device, checkpoint_dir
-from .openeds import train_dl, val_dl
+from .config import run, device
+from .openeds import train_dl, val_dl, test_dl
 from .earlystopper import EarlyStopping
-from .test import test_model
 
 
 model = UNet(
@@ -83,27 +82,11 @@ with run:
                 best_val_loss = val_loss
                 best_val_loss_epoch = epoch + 1
 
-                torch.save({
-                    'epoch': epoch,
-                    'model_state_dict': model.state_dict(),
-                    'optimizer_state_dict': optimizer.state_dict(),
-                    'train_loss': train_loss,
-                    'validation_loss': val_loss,
-                }, os.path.join(checkpoint_dir, f'best-{run.name}.pth'))
-
             if early_stop.stop_training:
                 print('#' * 20)
                 print(f"EARLY STOPPING REACHED at epoch {epoch}")
                 print('#' * 20)
                 break
-
-            torch.save({
-                'epoch': epoch,
-                'model_state_dict': model.state_dict(),
-                'optimizer_state_dict': optimizer.state_dict(),
-                'train_loss': train_loss,
-                'validation_loss': val_loss,
-            }, os.path.join(checkpoint_dir, f'last-{run.name}.pth'))
 
     print(f"TRAIN COMPLETED!")
     print(f"best_metric: {best_val_loss:.4f} at epoch: {best_val_loss_epoch}")
@@ -113,4 +96,28 @@ print('@' * 20)
 print('Proceed with test...')
 print('\n\n')
 
-test_model(model, loss_fun)
+model.eval()
+
+dice_metric = DiceMetric(
+    num_classes=model.out_channels
+)
+
+with torch.no_grad():
+    test_num_batches = ceil(len(test_dl.dataset) / float(test_dl.batch_size))
+    test_loss = 0
+
+    for test_batch in test_dl:
+        test_imgs = test_batch['img'].to(device)
+        test_masks = test_batch['mask'].to(device)
+        test_labels = test_batch['label'].permute(0, 1, 3, 2).to(device)
+        pred_labels = model(test_imgs)
+        loss = loss_fun(pred_labels, test_labels)
+        dice_metric(pred_labels, test_labels)
+        test_loss += loss.item()
+
+    test_loss /= test_num_batches
+    print('-' * 20)
+    print(f"Average test loss: {test_loss:.4f}")
+    print('-' * 20)
+    print(f'Dice metric: {dice_metric.aggregate(reduction="mean").item():.4f}')
+    print('-' * 20)
