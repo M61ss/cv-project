@@ -32,9 +32,6 @@ run = wandb.init(project=wandb_project_name, config=(config | ds_config))
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
-checkpoint_dir = os.path.join(os.path.dirname(__file__), 'checkpoints')
-os.makedirs(checkpoint_dir, exist_ok=True)
-
 print('Device:', device)
 
 model = LightLSTM(
