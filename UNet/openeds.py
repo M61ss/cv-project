@@ -5,24 +5,8 @@ import random
 import torch
 from torch.utils.data import ConcatDataset
 
-from monai.transforms import Compose, LoadImaged, EnsureChannelFirstd, ScaleIntensityd, AsDiscreted, RandGaussianSmoothd, SavitzkyGolaySmoothd, RandCoarseShuffled
+from monai.transforms import Compose, LoadImaged, EnsureChannelFirstd, ScaleIntensityd, AsDiscreted, RandGaussianSmoothd, RandCoarseShuffled
 from monai.data import Dataset, DataLoader, list_data_collate
-
-
-def dataset_info():
-    print('-' * 30)
-    print('Name: OpenEDS')
-    print()
-    print('Original dataset:')
-    print('\t- Train images:\t', len(train_files))
-    print('\t- Val images:\t', len(val_files))
-    print('\t- Test images:\t', len(test_files))
-    print()
-    print('Post augmentation:')
-    print('\t- Train images:\t', len(train_dataset))
-    print('\t- Val images:\t', len(val_dataset))
-    print('\t- Test images:\t', len(test_dataset))
-    print('-' * 30)
 
 
 data_dir = '/work/cvcs2026/LZMM/OpenEDS/openEDS/openEDS/train'
@@ -159,5 +143,16 @@ test_dl = DataLoader(
     collate_fn=list_data_collate,
 )
 
-if __name__=='__main__':
-    dataset_info()
+print('-' * 30)
+print('Name: OpenEDS')
+print()
+print('Original dataset:')
+print('\t- Train images:\t', len(train_files))
+print('\t- Val images:\t', len(val_files))
+print('\t- Test images:\t', len(test_files))
+print()
+print('Post augmentation:')
+print('\t- Train images:\t', len(train_dataset))
+print('\t- Val images:\t', len(val_dataset))
+print('\t- Test images:\t', len(test_dataset))
+print('-' * 30)
