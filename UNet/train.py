@@ -1,15 +1,40 @@
 from math import ceil
+import logging
+import sys
 
 import torch
 from torch.optim import Adam
+import monai
 from monai.networks.nets import UNet
 from monai.losses import DiceLoss
 from monai.metrics import DiceMetric
+import wandb
 
-from .config import run, device
-from .openeds import train_dl, val_dl, test_dl
-from .earlystopper import EarlyStopping
+from openeds import train_dl, val_dl, test_dl
+from earlystopper import EarlyStopping
 
+
+wandb.login()
+wandb_project_name = "UNet"
+config = {
+    "dataset": "OpenEDS-blur-augmented",
+    'architecture': 'UNet',
+    'input_channels': 1,
+    'output_channels': 4,
+    'channels': (8, 16, 32, 64, 128),
+    'strides': (2, 2, 2, 2),
+    'num_res_units': 3,
+    'dropout': 0.4,
+    'learning_rate': 1e-4,
+    "epoches": 100
+}
+
+run = wandb.init(project=wandb_project_name, config=config)
+
+logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+monai.config.print_config()
+
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 model = UNet(
     spatial_dims=2,
@@ -32,65 +57,63 @@ best_val_loss_epoch = -1
 
 early_stop = EarlyStopping(delta=0.001, patience=10, verbose=True)
 
-with run:
-    for epoch in range(run.config['epoches']):
-        print("=" * 20)
-        print(f"EPOCH {epoch + 1}/{run.config['epoches']}")
+for epoch in range(run.config['epoches']):
+    print("=" * 20)
+    print(f"EPOCH {epoch + 1}/{run.config['epoches']}")
             
-        train_num_batches = ceil(len(train_dl.dataset) / float(train_dl.batch_size))
-        val_num_batches = ceil(len(val_dl.dataset) / float(val_dl.batch_size))
+    train_num_batches = ceil(len(train_dl.dataset) / float(train_dl.batch_size))
+    val_num_batches = ceil(len(val_dl.dataset) / float(val_dl.batch_size))
 
-        train_loss = 0
-        val_loss = 0
+    train_loss = 0
+    val_loss = 0
 
-        model.train()
-        for i, train_batch in enumerate(train_dl):
-            train_imgs = train_batch['img'].to(device)
-            train_masks = train_batch['mask'].to(device)
-            train_labels = train_batch['label'].permute(0, 1, 3, 2).to(device)
+    model.train()
+    for i, train_batch in enumerate(train_dl):
+        train_imgs = train_batch['img'].to(device)
+        train_masks = train_batch['mask'].to(device)
+        train_labels = train_batch['label'].permute(0, 1, 3, 2).to(device)
 
-            optimizer.zero_grad()
-            pred = model(train_imgs)
-            loss = loss_fun(pred, train_labels)
-            loss.backward()
-            optimizer.step()
-            train_loss += loss.item()
-            print(f"\t{i}/{train_num_batches} train_loss: {loss.item():.4f}")
+        optimizer.zero_grad()
+        pred = model(train_imgs)
+        loss = loss_fun(pred, train_labels)
+        loss.backward()
+        optimizer.step()
+        train_loss += loss.item()
+        print(f"\t{i}/{train_num_batches} train_loss: {loss.item():.4f}")
 
-        train_loss /= train_num_batches
-        print(f"\tAverage train loss: {train_loss:.4f}")
-        run.log({'train_loss': train_loss})
+    train_loss /= train_num_batches
+    print(f"\tAverage train loss: {train_loss:.4f}")
+    run.log({'train_loss': train_loss})
 
-        with torch.no_grad():
-            model.eval()
-            for val_batch in val_dl:
-                val_imgs = val_batch['img'].to(device)
-                val_masks = val_batch['mask'].to(device)
-                val_labels = val_batch['label'].permute(0, 1, 3, 2).to(device)
+    with torch.no_grad():
+        model.eval()
+        for val_batch in val_dl:
+            val_imgs = val_batch['img'].to(device)
+            val_masks = val_batch['mask'].to(device)
+            val_labels = val_batch['label'].permute(0, 1, 3, 2).to(device)
 
-                pred = model(val_imgs)
-                loss = loss_fun(pred, val_labels)
-                val_loss += loss.item()
+            pred = model(val_imgs)
+            loss = loss_fun(pred, val_labels)
+            val_loss += loss.item()
 
-            val_loss /= val_num_batches
-            print(f"\tAverage validation loss: {val_loss:.4f}")
-            run.log({'validation_loss': val_loss})
+        val_loss /= val_num_batches
+        print(f"\tAverage validation loss: {val_loss:.4f}")
+        run.log({'validation_loss': val_loss})
 
-            early_stop.check_early_stop(val_loss)
+        early_stop.check_early_stop(val_loss)
 
-            if val_loss < best_val_loss:
-                best_val_loss = val_loss
-                best_val_loss_epoch = epoch + 1
+        if val_loss < best_val_loss:
+            best_val_loss = val_loss
+            best_val_loss_epoch = epoch + 1
 
-            if early_stop.stop_training:
-                print('#' * 20)
-                print(f"EARLY STOPPING REACHED at epoch {epoch}")
-                print('#' * 20)
-                break
+        if early_stop.stop_training:
+            print('#' * 20)
+            print(f"EARLY STOPPING REACHED at epoch {epoch}")
+            print('#' * 20)
+            break
 
-    print(f"TRAIN COMPLETED!")
-    print(f"best_metric: {best_val_loss:.4f} at epoch: {best_val_loss_epoch}")
-
+print(f"TRAIN COMPLETED!")
+print(f"best_metric: {best_val_loss:.4f} at epoch: {best_val_loss_epoch}")
 print('\n')
 print('@' * 20)
 print('Proceed with test...')
