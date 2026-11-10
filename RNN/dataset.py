@@ -75,13 +75,30 @@ def find_task_segments(blocks, is_task):
     return segments
 
 
+def group_segments_by_block(segments, blocks):
+    """Merge consecutive trials of the same block (e.g. the 5 cogH trials before its rating)."""
+    groups = []
+    for start, end in segments:
+        if groups and blocks[groups[-1][-1][0]] == blocks[start]:
+            groups[-1].append((start, end))
+        else:
+            groups.append([(start, end)])
+    return groups
+
+
 class IREye4Task(Dataset):
-    """One sample per complete task of IREye4Task, with the load label repeated on every frame."""
+    """Task samples from IREye4Task with the load label repeated on every frame.
+
+    group_by="trial": one sample per trial (e.g. each preTask -> Task -> pause cycle).
+    group_by="block": one sample per block, i.e. all consecutive trials of the same
+    block concatenated (pauses and preTask excluded), so 16 samples per subject.
+    """
 
     def __init__(
         self,
         dataset_dir,
         subject_ids=None,
+        group_by="block",
         frame_stride=1,
         min_frames=1,
         target_size=(224, 224),
@@ -92,6 +109,9 @@ class IREye4Task(Dataset):
     ):
         self.dataset_dir = Path(dataset_dir)
         self.subject_ids = {str(subject) for subject in subject_ids} if subject_ids is not None else None
+        if group_by not in ("trial", "block"):
+            raise ValueError("group_by must be 'trial' or 'block'")
+        self.group_by = group_by
         self.frame_stride = frame_stride
         self.min_frames = min_frames
         self.target_size = target_size
@@ -183,17 +203,24 @@ class IREye4Task(Dataset):
             if self.only_cognitive:
                 is_task &= np.array([block.startswith("cog") for block in blocks])
 
-            for start, end in find_task_segments(blocks, is_task):
-                block = blocks[start]
-                segment_frames = frame_indices[start:end]
-                gaps = int((np.diff(segment_frames) != 1).sum())
+            trials = find_task_segments(blocks, is_task)
+            for start, end in trials:
+                gaps = int((np.diff(frame_indices[start:end]) != 1).sum())
                 if gaps:
                     warnings.warn(
-                        f"Subject {subject_id}, task {block} (rows {start}-{end - 1}): "
+                        f"Subject {subject_id}, task {blocks[start]} (rows {start}-{end - 1}): "
                         f"{gaps} non-contiguous frame step(s)"
                     )
 
-                rows = np.arange(start, end, self.frame_stride)
+            if self.group_by == "trial":
+                groups = [[trial] for trial in trials]
+            else:
+                groups = group_segments_by_block(trials, blocks)
+
+            for group in groups:
+                block = blocks[group[0][0]]
+                task_rows = np.concatenate([np.arange(start, end) for start, end in group])
+                rows = task_rows[::self.frame_stride]
                 if len(rows) < self.min_frames:
                     continue
 
@@ -202,6 +229,7 @@ class IREye4Task(Dataset):
                     "subject": subject_id,
                     "block": block,
                     "label": load_map[block],
+                    "num_trials": len(group),
                     "frame_dir": frame_dir,
                     "frame_indices": frame_indices[rows],
                     "diameters": diameters,
@@ -271,19 +299,22 @@ def get_subject_splits():
     return train_subjects, val_subjects, test_subjects
 
 
-if __name__ == "__main__":
-    print('Loading dataset...')
-    print('')
+DATASET_PATH = "/work/cvcs2026/LZMM/IREye4Task"
+
+
+def get_dataloaders(
+    dataset_path=DATASET_PATH,
+    group_by="block",
+    frame_stride=5,
+    min_frames=1,
+    load_frames=False,
+    only_cognitive=False,
+    batch_size=1,
+    num_workers=4,
+    verbose=True,
+):
+    """Build train/val/test datasets and DataLoaders. Returns (train_dl, val_dl, test_dl)."""
     start_time = time.perf_counter()
-
-    ds_config = {
-        'frame_stride': 4,
-        'min_frames': 16,
-    }
-    for k, v in ds_config.items():
-        print(f"{k}: {v}")
-
-    dataset_path = "/work/cvcs2026/LZMM/IREye4Task"
     train_subs, val_subs, test_subs = get_subject_splits()
 
     train_transforms = v2.Compose([
@@ -296,30 +327,32 @@ if __name__ == "__main__":
     ])
 
     common = dict(
-        dataset_dir=dataset_path, 
-        rgb_format=True, 
-        load_frames=False, 
-        **ds_config
+        dataset_dir=dataset_path,
+        group_by=group_by,
+        frame_stride=frame_stride,
+        min_frames=min_frames,
+        load_frames=load_frames,
+        only_cognitive=only_cognitive,
+        rgb_format=True,
     )
     train_dataset = IREye4Task(subject_ids=train_subs, transform=train_transforms, **common)
     val_dataset = IREye4Task(subject_ids=val_subs, transform=val_test_transforms, **common)
     test_dataset = IREye4Task(subject_ids=test_subs, transform=val_test_transforms, **common)
 
-    loader_args = dict(
-        batch_size=1, 
-        num_workers=4, 
-        collate_fn=pad_collate
-    )
+    loader_args = dict(batch_size=batch_size, num_workers=num_workers, collate_fn=pad_collate)
     train_dl = DataLoader(train_dataset, shuffle=True, **loader_args)
     val_dl = DataLoader(val_dataset, **loader_args)
     test_dl = DataLoader(test_dataset, **loader_args)
 
-    end_time = time.perf_counter()
-    print('Dataset loaded!')
-    print(f'Elapsed time: {end_time - start_time:.3f} s')
-    print('')
+    if verbose:
+        print(f"Dataset loaded in {time.perf_counter() - start_time:.3f} s")
+        for name, ds in (("Train", train_dataset), ("Validation", val_dataset), ("Test", test_dataset)):
+            lengths = [len(s["frame_indices"]) for s in ds.samples]
+            print(f"{name}: {len(ds)} tasks, frames per task min/median/max = "
+                  f"{min(lengths)}/{int(np.median(lengths))}/{max(lengths)}")
 
-    for name, ds in (("Train", train_dataset), ("Validation", val_dataset), ("Test", test_dataset)):
-        lengths = [len(s["frame_indices"]) for s in ds.samples]
-        print(f'{name}: {len(ds)} tasks, frames per task min/median/max = '
-              f'{min(lengths)}/{int(np.median(lengths))}/{max(lengths)}')
+    return train_dl, val_dl, test_dl
+
+
+if __name__ == "__main__":
+    get_dataloaders(group_by="trial")
