@@ -6,7 +6,7 @@ import cv2
 import numpy as np
 import pandas as pd
 import torch
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, DataLoader
 from torchvision.transforms import Normalize, v2
 
 
@@ -301,7 +301,29 @@ test_dataset = IREye4TaskVideoDataset(
     load_frames=False
 )
 
+train_dl = DataLoader(
+    train_dataset,
+    batch_size=1,
+    num_workers=4
+)
+
+val_dl = DataLoader(
+    val_dataset,
+    batch_size=1,
+    num_workers=4
+)
+
+test_dl = DataLoader(
+    test_dataset,
+    batch_size=1,
+    num_workers=4
+)
+
 end_time = time.perf_counter()
 print('Dataset loaded!')
 print(f'Elapsed time: {end_time - start_time:.3f} s')
 print('')
+
+print(f'Train size: {len(train_dataset)}')
+print(f'Validation size: {len(val_dataset)}')
+print(f'Test size: {len(test_dataset)}')
