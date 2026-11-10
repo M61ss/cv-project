@@ -31,6 +31,3 @@ logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 monai.config.print_config()
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
-checkpoint_dir = os.path.join(os.path.dirname(__file__), 'checkpoints')
-os.makedirs(checkpoint_dir, exist_ok=True)
