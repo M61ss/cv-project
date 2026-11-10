@@ -295,7 +295,12 @@ if __name__ == "__main__":
         v2.Resize((224, 224), antialias=True),
     ])
 
-    common = dict(dataset_dir=dataset_path, rgb_format=True, load_frames=False, **ds_config)
+    common = dict(
+        dataset_dir=dataset_path, 
+        rgb_format=True, 
+        load_frames=False, 
+        **ds_config
+    )
     train_dataset = IREye4TaskDataset(subject_ids=train_subs, transform=train_transforms, **common)
     val_dataset = IREye4TaskDataset(subject_ids=val_subs, transform=val_test_transforms, **common)
     test_dataset = IREye4TaskDataset(subject_ids=test_subs, transform=val_test_transforms, **common)
