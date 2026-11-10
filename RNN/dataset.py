@@ -75,7 +75,7 @@ def find_task_segments(blocks, is_task):
     return segments
 
 
-class IREye4TaskDataset(Dataset):
+class IREye4Task(Dataset):
     """One sample per complete task of IREye4Task, with the load label repeated on every frame."""
 
     def __init__(
@@ -301,9 +301,9 @@ if __name__ == "__main__":
         load_frames=False, 
         **ds_config
     )
-    train_dataset = IREye4TaskDataset(subject_ids=train_subs, transform=train_transforms, **common)
-    val_dataset = IREye4TaskDataset(subject_ids=val_subs, transform=val_test_transforms, **common)
-    test_dataset = IREye4TaskDataset(subject_ids=test_subs, transform=val_test_transforms, **common)
+    train_dataset = IREye4Task(subject_ids=train_subs, transform=train_transforms, **common)
+    val_dataset = IREye4Task(subject_ids=val_subs, transform=val_test_transforms, **common)
+    test_dataset = IREye4Task(subject_ids=test_subs, transform=val_test_transforms, **common)
 
     loader_args = dict(batch_size=1, num_workers=4, collate_fn=pad_collate)
     train_dl = DataLoader(train_dataset, shuffle=True, **loader_args)
