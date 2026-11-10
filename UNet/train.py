@@ -28,7 +28,6 @@ config = {
     'learning_rate': 1e-4,
     "epoches": 100
 }
-
 run = wandb.init(project=wandb_project_name, config=config)
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
@@ -38,28 +37,28 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 model = UNet(
     spatial_dims=2,
-    in_channels=run.config['input_channels'],
-    out_channels=run.config['output_channels'],
-    channels=run.config['channels'],
-    strides=run.config['strides'],
-    num_res_units=run.config['num_res_units'],
-    dropout=run.config['dropout']
+    in_channels=config['input_channels'],
+    out_channels=config['output_channels'],
+    channels=config['channels'],
+    strides=config['strides'],
+    num_res_units=config['num_res_units'],
+    dropout=config['dropout']
 ).to(device)
 
 loss_fun = DiceLoss(
     softmax=True
 )
 
-optimizer = Adam(model.parameters(), lr=run.config['learning_rate'])
+optimizer = Adam(model.parameters(), lr=config['learning_rate'])
 
 best_val_loss = float('inf')
 best_val_loss_epoch = -1
 
 early_stop = EarlyStopping(delta=0.001, patience=10, verbose=True)
 
-for epoch in range(run.config['epoches']):
+for epoch in range(config['epoches']):
     print("=" * 20)
-    print(f"EPOCH {epoch + 1}/{run.config['epoches']}")
+    print(f"EPOCH {epoch + 1}/{config['epoches']}")
             
     train_num_batches = ceil(len(train_dl.dataset) / float(train_dl.batch_size))
     val_num_batches = ceil(len(val_dl.dataset) / float(val_dl.batch_size))
@@ -119,13 +118,14 @@ print('@' * 20)
 print('Proceed with test...')
 print('\n\n')
 
-model.eval()
 
 dice_metric = DiceMetric(
     num_classes=model.out_channels
 )
 
 with torch.no_grad():
+    model.eval()    
+    
     test_num_batches = ceil(len(test_dl.dataset) / float(test_dl.batch_size))
     test_loss = 0
 
