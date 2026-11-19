@@ -1,3 +1,4 @@
+import math
 import re
 import time
 import warnings
@@ -7,6 +8,7 @@ import cv2
 import numpy as np
 import pandas as pd
 import torch
+import torch.nn.functional as F
 from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data import DataLoader, Dataset
 from torchvision.transforms import Normalize, v2
@@ -49,7 +51,7 @@ def pupil_eq_diameter(landmarks):
     lm = np.asarray(landmarks, dtype=np.float32)
     points = np.stack([lm[:num_landmarks], lm[num_landmarks:2 * num_landmarks]], axis=1)[pupil_indices]
     if not np.isfinite(points).all():
-        return np.nan
+        return 0.0
     _, axes, _ = cv2.fitEllipse(points)
     return float(np.sqrt(axes[0] * axes[1]))
 
@@ -86,12 +88,33 @@ def group_segments_by_block(segments, blocks):
     return groups
 
 
-class IREye4Task(Dataset):
-    """Task samples from IREye4Task with the load label repeated on every frame.
+def split_into_instances(x, instance_length, pad_value=0.0):
+    """Split x along dim 0 into instances of exactly `instance_length` steps.
 
-    group_by="trial": one sample per trial (e.g. each preTask -> Task -> pause cycle).
-    group_by="block": one sample per block, i.e. all consecutive trials of the same
-    block concatenated (pauses and preTask excluded), so 16 samples per subject.
+    x: (T, ...) -> (K, instance_length, ...) with K = ceil(T / instance_length).
+    If T is not a multiple of instance_length, the last instance is completed with
+    pad_value. If T == instance_length, the result is x itself with K = 1.
+    Also returns a boolean mask (K, instance_length) that is True on real steps.
+    """
+    num_steps = x.shape[0]
+    num_instances = max(1, math.ceil(num_steps / instance_length))
+    pad = num_instances * instance_length - num_steps
+    if pad:
+        x = F.pad(x, [0, 0] * (x.dim() - 1) + [0, pad], value=pad_value)
+    mask = torch.arange(num_instances * instance_length) < num_steps
+    return x.unflatten(0, (num_instances, instance_length)), mask.view(num_instances, instance_length)
+
+
+class IREye4Task(Dataset):
+    """Task samples from IREye4Task as bags for multiple instance learning.
+
+    group_by="trial": one bag per trial (e.g. each preTask -> Task -> pause cycle).
+    group_by="block": one bag per block, i.e. all consecutive trials of the same
+    block concatenated (pauses and preTask excluded), so 16 bags per subject.
+
+    Each bag is split into K instances of exactly `instance_length` frames (counted
+    after frame_stride); the last instance is padded when the bag length is not a
+    multiple of instance_length. The label is one per bag.
     """
 
     def __init__(
@@ -101,6 +124,7 @@ class IREye4Task(Dataset):
         group_by="block",
         frame_stride=1,
         min_frames=1,
+        instance_length=32,
         target_size=(224, 224),
         load_frames=True,
         only_cognitive=False,
@@ -114,6 +138,7 @@ class IREye4Task(Dataset):
         self.group_by = group_by
         self.frame_stride = frame_stride
         self.min_frames = min_frames
+        self.instance_length = instance_length
         self.target_size = target_size
         self.load_frames = load_frames
         self.only_cognitive = only_cognitive
@@ -125,8 +150,8 @@ class IREye4Task(Dataset):
         )
         self.samples = []
 
-        if self.frame_stride <= 0 or self.min_frames <= 0:
-            raise ValueError("frame_stride and min_frames must be positive")
+        if self.frame_stride <= 0 or self.min_frames <= 0 or self.instance_length <= 0:
+            raise ValueError("frame_stride, min_frames and instance_length must be positive")
         if not self.dataset_dir.is_dir():
             raise FileNotFoundError(f"Dataset directory does not exist: {self.dataset_dir}")
 
@@ -230,6 +255,7 @@ class IREye4Task(Dataset):
                     "block": block,
                     "label": load_map[block],
                     "num_trials": len(group),
+                    "num_instances": math.ceil(len(rows) / self.instance_length),
                     "frame_dir": frame_dir,
                     "frame_indices": frame_indices[rows],
                     "diameters": diameters,
@@ -244,10 +270,18 @@ class IREye4Task(Dataset):
         return len(self.samples)
 
     def __getitem__(self, idx):
+        """Return one bag.
+
+        video:      (K, C, m, H, W), or an empty tensor if load_frames=False
+        diameters:  (K, m, 1)
+        frame_mask: (K, m), True on real frames, False on padding
+        label:      int, one per bag
+        """
         sample = self.samples[idx]
-        num_frames = len(sample["frame_indices"])
-        diameters_tensor = torch.from_numpy(sample["diameters"]).unsqueeze(-1)            # (T, 1)
-        labels_tensor = torch.full((num_frames, 1), sample["label"], dtype=torch.float32)  # (T, 1)
+        m = self.instance_length
+        diameters = torch.from_numpy(sample["diameters"]).unsqueeze(-1)            # (T, 1)
+        diameters, frame_mask = split_into_instances(diameters, m)                  # (K, m, 1), (K, m)
+        label = sample["label"]
         video_tensor = torch.empty(0)
 
         if self.load_frames:
@@ -266,29 +300,36 @@ class IREye4Task(Dataset):
                 video_tensor = video_tensor.repeat(1, 3, 1, 1)
             if self.transform:
                 video_tensor = self.transform(video_tensor)
-            video_tensor = self.normalize(video_tensor).permute(1, 0, 2, 3)               # (C, T, H, W)
+            video_tensor = self.normalize(video_tensor)                                # (T, C, H, W)
+            # Padding frames are 0 after normalization, i.e. the normalization mean.
+            video_tensor, _ = split_into_instances(video_tensor, m)                    # (K, m, C, H, W)
+            video_tensor = video_tensor.permute(0, 2, 1, 3, 4)                         # (K, C, m, H, W)
 
-        return video_tensor, diameters_tensor, labels_tensor
+        return video_tensor, diameters, frame_mask, label
 
 
-def pad_collate(batch):
-    """Pad tasks of different length to the longest one in the batch.
+def mil_collate(batch):
+    """Pad bags with a different number of instances to the largest one in the batch.
 
-    Returns video (B, C, T, H, W) or an empty tensor, diameters (B, T, 1),
-    labels (B, T, 1) padded with -1, and a boolean mask (B, T) that is True on real frames.
+    Returns:
+      videos:        (B, K, C, m, H, W), or an empty tensor if frames are not loaded
+      diameters:     (B, K, m, 1)
+      labels:        (B,) one label per bag
+      frame_mask:    (B, K, m), True on real frames
+      instance_mask: (B, K), True on real instances (False on instances added to fill the batch)
     """
-    videos, diameters, labels = zip(*batch)
-    lengths = torch.tensor([d.shape[0] for d in diameters])
+    videos, diameters, frame_masks, labels = zip(*batch)
+    num_instances = torch.tensor([d.shape[0] for d in diameters])
     diameters = pad_sequence(diameters, batch_first=True)
-    labels = pad_sequence(labels, batch_first=True, padding_value=-1.0)
-    mask = torch.arange(diameters.shape[1])[None, :] < lengths[:, None]
+    frame_mask = pad_sequence(frame_masks, batch_first=True, padding_value=False)
+    instance_mask = torch.arange(diameters.shape[1])[None, :] < num_instances[:, None]
+    labels = torch.tensor(labels, dtype=torch.long)
 
     if videos[0].numel() == 0:
         videos = torch.empty(0)
     else:
-        videos = pad_sequence([v.permute(1, 0, 2, 3) for v in videos], batch_first=True)  # (B, T, C, H, W)
-        videos = videos.permute(0, 2, 1, 3, 4)
-    return videos, diameters, labels, mask
+        videos = pad_sequence(videos, batch_first=True)
+    return videos, diameters, labels, frame_mask, instance_mask
 
 
 def get_subject_splits():
@@ -307,6 +348,7 @@ def get_dataloaders(
     group_by="block",
     frame_stride=5,
     min_frames=1,
+    instance_length=32,
     load_frames=False,
     only_cognitive=False,
     batch_size=1,
@@ -331,6 +373,7 @@ def get_dataloaders(
         group_by=group_by,
         frame_stride=frame_stride,
         min_frames=min_frames,
+        instance_length=instance_length,
         load_frames=load_frames,
         only_cognitive=only_cognitive,
         rgb_format=True,
@@ -339,7 +382,7 @@ def get_dataloaders(
     val_dataset = IREye4Task(subject_ids=val_subs, transform=val_test_transforms, **common)
     test_dataset = IREye4Task(subject_ids=test_subs, transform=val_test_transforms, **common)
 
-    loader_args = dict(batch_size=batch_size, num_workers=num_workers, collate_fn=pad_collate)
+    loader_args = dict(batch_size=batch_size, num_workers=num_workers, collate_fn=mil_collate)
     train_dl = DataLoader(train_dataset, shuffle=True, **loader_args)
     val_dl = DataLoader(val_dataset, **loader_args)
     test_dl = DataLoader(test_dataset, **loader_args)
@@ -348,8 +391,11 @@ def get_dataloaders(
         print(f"Dataset loaded in {time.perf_counter() - start_time:.3f} s")
         for name, ds in (("Train", train_dataset), ("Validation", val_dataset), ("Test", test_dataset)):
             lengths = [len(s["frame_indices"]) for s in ds.samples]
-            print(f"{name}: {len(ds)} tasks, frames per task min/median/max = "
-                  f"{min(lengths)}/{int(np.median(lengths))}/{max(lengths)}")
+            bags = [s["num_instances"] for s in ds.samples]
+            print(f"{name}: {len(ds)} bags, frames per bag min/median/max = "
+                  f"{min(lengths)}/{int(np.median(lengths))}/{max(lengths)}, "
+                  f"instances of {instance_length} frames per bag min/median/max = "
+                  f"{min(bags)}/{int(np.median(bags))}/{max(bags)}")
 
     return train_dl, val_dl, test_dl
 
