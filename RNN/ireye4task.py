@@ -281,7 +281,7 @@ class IREye4Task(Dataset):
         m = self.instance_length
         diameters = torch.from_numpy(sample["diameters"]).unsqueeze(-1)            # (T, 1)
         diameters, frame_mask = split_into_instances(diameters, m)                  # (K, m, 1), (K, m)
-        label = sample["label"]
+        label = torch.tensor(sample["label"])
         video_tensor = torch.empty(0)
 
         if self.load_frames:
