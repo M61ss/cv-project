@@ -8,12 +8,13 @@ import torch.nn as nn
 from torch.optim import Adam
 import wandb
 
-from lstm import LightLSTM
 from ireye4task import get_dataloaders
+from lstm import LightLSTM, MILLSTM
 from earlystopper import EarlyStopping
 
 
 if __name__ == "__main__":
+    
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     wandb.login()
@@ -22,13 +23,13 @@ if __name__ == "__main__":
         "dataset": "IREye4Task",
         "frame_stride": 4,
         "min_frames": 16,
-        'architecture': 'LSTM',
+        'architecture': 'MIL-LSTM',
         'input_dim': 1,
         'output_dim': 1,
         'hidden_dim': 16,
         'num_layers': 4,
         'learning_rate': 1e-4,
-        "num_epoches": 1
+        "num_epoches": 50
     }
     run = wandb.init(project=wandb_project_name, config=config)
 
@@ -43,7 +44,7 @@ if __name__ == "__main__":
         batch_size=1
     )
 
-    model = LightLSTM(
+    model = MILLSTM(
         input_size=config['input_dim'],
         out_size=config['output_dim'], 
         hidden_size=config['hidden_dim'], 
@@ -69,7 +70,7 @@ if __name__ == "__main__":
         train_loss = 0
         for i, train_batch in enumerate(train_dl):
             x = train_batch[1].to(device)
-            y = train_batch[2].to(device)
+            y = train_batch[2].float().unsqueeze(-1).to(device)
 
             opt.zero_grad()
             y_pred = model(x)
@@ -89,8 +90,9 @@ if __name__ == "__main__":
             model.eval()
 
             val_loss = 0
-            for _, x, y in val_dl:
-                x, y = x.to(device), y.to(device)
+            for _, x, y, *_ in val_dl:
+                x = x.to(device) 
+                y = y.float().unsqueeze(-1).to(device)
 
                 y_pred = model(x)
                 loss = loss_fn(y_pred, y)
@@ -121,9 +123,9 @@ if __name__ == "__main__":
         y_pred = torch.empty(0)
         y_true = torch.empty(0)
         test_loss = 0
-        for _, x, y in test_dl:
+        for _, x, y, *_ in test_dl:
             x = x.to(device)
-            y = y.to(device)
+            y = y.float().unsqueeze(-1).to(device)
 
             pred = model(x)
             loss = loss_fn(pred, y)
