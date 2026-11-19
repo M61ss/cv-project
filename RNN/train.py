@@ -9,7 +9,7 @@ from torch.optim import Adam
 import wandb
 
 from lstm import LightLSTM
-from dataset import get_dataloaders
+from ireye4task import get_dataloaders
 from earlystopper import EarlyStopping
 
 
