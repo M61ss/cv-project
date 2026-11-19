@@ -2,6 +2,9 @@ import torch
 import torch.nn as nn
 
 
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+
 class LightLSTM(nn.Module):
     def __init__(self, input_size, hidden_size, out_size, num_layers=1):
         super().__init__()
@@ -21,8 +24,8 @@ class MILLSTM(nn.Module):
         self.fc = nn.Linear(hidden_size, out_size)
 
     def forward(self, x):
-        BCH, BAG, _ = x.shape
-        h_n_tot = torch.tensor(0)
+        BCH, BAG, *_ = x.shape
+        h_n_tot = torch.empty(0, device=device)
         for i in range(BAG):
             instance = x[:, i]
             out, (h_n, c_n) = self.lstm(instance)
