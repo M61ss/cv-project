@@ -9,7 +9,7 @@ from torch.optim import Adam
 import wandb
 
 from ireye4task import get_dataloaders
-from lstm import LightLSTM, MILLSTM
+from lstm import LightLSTM, MILAvgLSTM, MILAttnLSTM
 from earlystopper import EarlyStopping
 
 
@@ -23,7 +23,7 @@ if __name__ == "__main__":
         "dataset": "IREye4Task",
         "frame_stride": 4,
         "min_frames": 16,
-        'architecture': 'MIL-LSTM',
+        'architecture': 'MIL-Attn-LSTM',
         'input_dim': 1,
         'output_dim': 1,
         'hidden_dim': 16,
@@ -44,7 +44,7 @@ if __name__ == "__main__":
         batch_size=1
     )
 
-    model = MILLSTM(
+    model = MILAttnLSTM(
         input_size=config['input_dim'],
         out_size=config['output_dim'], 
         hidden_size=config['hidden_dim'], 
